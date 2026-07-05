@@ -3,6 +3,9 @@
   "compilerOptions": {
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    // TypeORM hydrates entity properties at runtime; the initializer
+    // check only produces false positives on entity classes.
+    "strictPropertyInitialization": false,
     "declaration": false,
     "declarationMap": false,
     "sourceMap": true,
