@@ -14,6 +14,13 @@ export const queryKeys = {
   conversation: (id: string) => ["conversations", id] as const,
   messages: (conversationId: string) =>
     ["conversations", conversationId, "messages"] as const,
+  ai: (conversationId: string) => ["ai", conversationId] as const,
+  aiSummary: (conversationId: string) =>
+    ["ai", conversationId, "summary"] as const,
+  aiClassification: (conversationId: string) =>
+    ["ai", conversationId, "classification"] as const,
+  aiKbSuggestions: (conversationId: string) =>
+    ["ai", conversationId, "kb"] as const,
   kbCategories: ["kb", "categories"] as const,
   kbArticles: (params: {
     search?: string;

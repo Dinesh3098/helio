@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { MessagesModule } from './modules/messages/messages.module';
+import { AiModule } from './modules/ai/ai.module';
 import { KbModule } from './modules/kb/kb.module';
 import { WidgetModule } from './modules/widget/widget.module';
 import { RealtimeModule } from './realtime/realtime.module';
@@ -56,6 +57,7 @@ import { RedisModule } from './redis/redis.module';
     MessagesModule,
     WidgetModule,
     KbModule,
+    AiModule,
     RealtimeModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],

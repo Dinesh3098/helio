@@ -1,17 +1,20 @@
 "use client";
 
 import { Loader2, SendHorizonal } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { getSocket, REALTIME } from "@/lib/realtime/socket";
+import { useUiStore } from "@/stores/ui-store";
 import { useSendMessage } from "../hooks";
 
 const TYPING_REEMIT_MS = 2000;
 const TYPING_IDLE_MS = 2500;
 
 export function MessageComposer({ conversationId }: { conversationId: string }) {
-  const [content, setContent] = useState("");
+  // Draft lives in the UI store so the AI panel can insert/rewrite it.
+  const content = useUiStore((s) => s.composerDraft);
+  const setContent = useUiStore((s) => s.setComposerDraft);
   const send = useSendMessage(conversationId);
   const typingRef = useRef<{
     lastSentAt: number;

@@ -13,6 +13,14 @@ interface UiState {
   unreadCounts: Record<string, number>;
   incrementUnread: (conversationId: string) => void;
   clearUnread: (conversationId: string) => void;
+  /**
+   * Composer draft for the open conversation. Lives here (not in the
+   * composer) so the AI panel can insert suggestions and rewrite it.
+   */
+  composerDraft: string;
+  setComposerDraft: (draft: string) => void;
+  aiPanelOpen: boolean;
+  toggleAiPanel: () => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -22,9 +30,12 @@ export const useUiStore = create<UiState>((set) => ({
   selectedConversationId: null,
   selectConversation: (id) =>
     set((state) => {
-      if (!id) return { selectedConversationId: id };
+      if (id === state.selectedConversationId) return state;
+      // A draft never follows you to another conversation.
+      if (!id) return { selectedConversationId: id, composerDraft: "" };
       return {
         selectedConversationId: id,
+        composerDraft: "",
         unreadCounts: withoutKey(state.unreadCounts, id),
       };
     }),
@@ -40,6 +51,10 @@ export const useUiStore = create<UiState>((set) => ({
     set((state) => ({
       unreadCounts: withoutKey(state.unreadCounts, conversationId),
     })),
+  composerDraft: "",
+  setComposerDraft: (draft) => set({ composerDraft: draft }),
+  aiPanelOpen: false,
+  toggleAiPanel: () => set((state) => ({ aiPanelOpen: !state.aiPanelOpen })),
 }));
 
 function withoutKey(
