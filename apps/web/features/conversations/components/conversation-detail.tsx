@@ -72,6 +72,14 @@ export function ConversationDetail({
             {detail.contact.name}
           </Link>
           <p className="text-muted-foreground truncate text-xs">
+            {detail.channel === "EMAIL" && detail.subject && (
+              <>
+                <span className="text-foreground font-medium">
+                  {detail.subject}
+                </span>
+                {" · "}
+              </>
+            )}
             {detail.assignee
               ? `Assigned to ${detail.assignee.name}`
               : "Unassigned"}
@@ -124,7 +132,10 @@ export function ConversationDetail({
               This conversation is resolved. Reopen it to reply.
             </div>
           ) : (
-            <MessageComposer conversationId={detail.id} />
+            <MessageComposer
+              conversationId={detail.id}
+              channel={detail.channel}
+            />
           )}
         </div>
 

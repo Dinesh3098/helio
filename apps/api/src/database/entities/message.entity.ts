@@ -19,6 +19,30 @@ export enum MessageType {
   SYSTEM = 'SYSTEM',
 }
 
+/** Metadata-only attachment reference — Helio never stores the bytes. */
+export interface MessageAttachment {
+  filename: string;
+  mimeType: string;
+  size: number;
+  url: string | null;
+}
+
+/**
+ * Channel-specific extras. Chat messages leave this null; email messages
+ * carry their envelope here so the Message row itself stays channel-
+ * agnostic.
+ */
+export interface MessageMetadata {
+  email?: {
+    subject: string | null;
+    from: string;
+    to: string;
+    messageId: string | null;
+    html: string | null;
+    attachments: MessageAttachment[];
+  };
+}
+
 /**
  * Immutable message rows (no updated_at). The sender is polymorphic
  * (contact or user), so sender_id intentionally has no foreign key —
@@ -63,6 +87,9 @@ export class Message {
 
   @Column({ name: 'is_read', type: 'boolean', default: false })
   isRead: boolean;
+
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: MessageMetadata | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

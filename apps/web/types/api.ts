@@ -82,6 +82,25 @@ export interface ConversationDetail extends Conversation {
 export type MessageSenderType = "USER" | "CONTACT";
 export type MessageType = "TEXT" | "SYSTEM";
 
+export interface MessageAttachment {
+  filename: string;
+  mimeType: string;
+  size: number;
+  url: string | null;
+}
+
+/** Channel extras — email envelope; null for chat messages. */
+export interface MessageMetadata {
+  email?: {
+    subject: string | null;
+    from: string;
+    to: string;
+    messageId: string | null;
+    html: string | null;
+    attachments: MessageAttachment[];
+  };
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -90,6 +109,7 @@ export interface Message {
   senderName: string | null;
   content: string;
   messageType: MessageType;
+  metadata: MessageMetadata | null;
   createdAt: string;
 }
 

@@ -134,6 +134,17 @@ export class RealtimeGateway
     return undefined;
   }
 
+  /**
+   * Server-initiated fan-out for messages that arrive outside a socket
+   * (inbound email webhook, outbound email REST send). Same event and
+   * payload the socket path emits — dashboards can't tell the difference.
+   */
+  broadcastMessageCreated(message: MessageResponseDto): void {
+    this.server
+      .to(conversationRoom(message.conversationId))
+      .emit(SERVER_EVENTS.messageCreated, message);
+  }
+
   /** Runs only for sockets the auth middleware admitted. */
   handleConnection(client: GatewaySocket): void {
     const { user, visitor } = client.data;

@@ -15,6 +15,7 @@ import {
   MessageSenderType,
   MessageType,
   User,
+  type MessageMetadata,
 } from '../../database/entities';
 import { CreateMessageDto } from './dto/create-message.dto';
 import {
@@ -96,6 +97,7 @@ export class MessagesService {
     workspaceId: string,
     conversationId: string,
     dto: CreateMessageDto,
+    metadata?: MessageMetadata,
   ): Promise<MessageResponseDto> {
     const conversation = await this.findInWorkspace(
       workspaceId,
@@ -105,6 +107,7 @@ export class MessagesService {
       senderType: MessageSenderType.USER,
       senderId: user.id,
       content: dto.content,
+      metadata: metadata ?? null,
     });
     return this.toResponse(message, user.name);
   }
@@ -118,6 +121,7 @@ export class MessagesService {
   async createContactMessage(
     visitor: { contactId: string; workspaceId: string; conversationId: string },
     dto: CreateMessageDto,
+    metadata?: MessageMetadata,
   ): Promise<MessageResponseDto> {
     const conversation = await this.findInWorkspace(
       visitor.workspaceId,
@@ -132,6 +136,7 @@ export class MessagesService {
       senderType: MessageSenderType.CONTACT,
       senderId: visitor.contactId,
       content: dto.content,
+      metadata: metadata ?? null,
     });
     return this.toResponse(message, conversation.contact.name);
   }
@@ -148,6 +153,7 @@ export class MessagesService {
       senderType: MessageSenderType;
       senderId: string | null;
       content: string;
+      metadata?: MessageMetadata | null;
     },
   ): Promise<Message> {
     if (conversation.status === ConversationStatus.RESOLVED) {
@@ -164,6 +170,7 @@ export class MessagesService {
           senderId: input.senderId,
           content: input.content,
           messageType: MessageType.TEXT,
+          metadata: input.metadata ?? null,
         }),
       );
 
@@ -238,6 +245,7 @@ export class MessagesService {
       senderName,
       content: message.content,
       messageType: message.messageType,
+      metadata: message.metadata,
       createdAt: message.createdAt,
     };
   }
