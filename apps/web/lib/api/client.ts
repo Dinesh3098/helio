@@ -1,7 +1,8 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { tokenStore } from "@/lib/auth/token-store";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+export const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 /** Endpoints where a 401 is a real answer, not an expired access token. */
 const AUTH_PATHS = ["/auth/login", "/auth/signup", "/auth/refresh"];

@@ -1,0 +1,18 @@
+import { Module } from '@nestjs/common';
+import { AuthModule } from '../modules/auth/auth.module';
+import { ConversationsModule } from '../modules/conversations/conversations.module';
+import { MessagesModule } from '../modules/messages/messages.module';
+import { WorkspaceMembersModule } from '../modules/workspace-members/workspace-members.module';
+import { ConnectionRegistryService } from './connection-registry.service';
+import { RealtimeGateway } from './realtime.gateway';
+
+@Module({
+  imports: [
+    AuthModule,
+    ConversationsModule,
+    MessagesModule,
+    WorkspaceMembersModule,
+  ],
+  providers: [RealtimeGateway, ConnectionRegistryService],
+})
+export class RealtimeModule {}

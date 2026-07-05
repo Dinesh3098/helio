@@ -12,6 +12,7 @@ import {
   WorkspaceMember,
   WorkspaceMemberRole,
 } from '../../database/entities';
+import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { SessionsService } from '../sessions/sessions.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -30,6 +31,11 @@ export interface PublicUser {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+}
+
+interface AccessTokenPayload {
+  sub: string;
+  email: string;
 }
 
 @Injectable()
@@ -148,6 +154,24 @@ export class AuthService {
 
   async logout(dto: RefreshTokenDto): Promise<void> {
     await this.sessionsService.revokeByToken(dto.refreshToken);
+  }
+
+  /**
+   * Token verification for non-HTTP transports (Socket.IO handshake).
+   * Same semantics as JwtStrategy.validate: signature + expiry, then the
+   * user must still exist and be active. Returns null instead of throwing
+   * so callers on other protocols map the failure themselves.
+   */
+  async verifyAccessToken(token: string): Promise<AuthenticatedUser | null> {
+    try {
+      const payload =
+        await this.jwtService.verifyAsync<AccessTokenPayload>(token);
+      const user = await this.usersService.findById(payload.sub);
+      if (!user || !user.isActive) return null;
+      return { id: user.id, email: user.email, name: user.name };
+    } catch {
+      return null;
+    }
   }
 
   /**

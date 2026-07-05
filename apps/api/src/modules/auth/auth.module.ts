@@ -26,5 +26,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
+  // Exported for the realtime gateway's handshake verification.
+  exports: [AuthService],
 })
 export class AuthModule {}

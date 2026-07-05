@@ -8,16 +8,26 @@ import {
   useQueryClient,
   type InfiniteData,
 } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { useMe } from "@/features/auth/hooks";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
+import {
+  getSocket,
+  REALTIME,
+  type SendMessageAck,
+} from "@/lib/realtime/socket";
 import type { Message, MessagesPage } from "@/types/api";
 import {
   conversationsApi,
   messagesApi,
   type ConversationListParams,
 } from "./api";
+import {
+  appendMessageToCache,
+  applyMessageToConversationCaches,
+} from "./cache";
 
 export function useConversations(params: ConversationListParams) {
   return useQuery({
@@ -70,8 +80,23 @@ export function useSendMessage(conversationId: string) {
   const messagesKey = queryKeys.messages(conversationId);
 
   return useMutation({
-    mutationFn: (content: string) =>
-      messagesApi.send({ conversationId, content }),
+    // Socket first — the gateway persists via the same MessagesService and
+    // broadcasts to the room. REST is the fallback when the socket is down
+    // (both paths return the identical message shape).
+    mutationFn: async (content: string) => {
+      const socket = getSocket();
+      if (socket.connected) {
+        const ack = (await socket
+          .timeout(8000)
+          .emitWithAck(REALTIME.sendMessage, {
+            conversationId,
+            content,
+          })) as SendMessageAck;
+        if ("error" in ack) throw new Error(ack.error);
+        return ack.message;
+      }
+      return messagesApi.send({ conversationId, content });
+    },
 
     onMutate: async (content) => {
       await queryClient.cancelQueries({ queryKey: messagesKey });
@@ -111,33 +136,19 @@ export function useSendMessage(conversationId: string) {
       if (context?.previous) {
         queryClient.setQueryData(messagesKey, context.previous);
       }
-      toast.error(getApiErrorMessage(error));
+      toast.error(
+        isAxiosError(error)
+          ? getApiErrorMessage(error)
+          : error.message || "Could not send the message",
+      );
     },
 
+    // Swap the optimistic placeholder for the persisted message (the room
+    // broadcast may have appended it already — appendMessageToCache
+    // dedupes by id) and bump list/detail caches in place. No refetch.
     onSuccess: (message, _content, context) => {
-      queryClient.setQueryData<MessagesData>(messagesKey, (data) => {
-        if (!data) return data;
-        return {
-          ...data,
-          pages: data.pages.map((page, index) =>
-            index === 0
-              ? {
-                  ...page,
-                  data: page.data.map((m) =>
-                    m.id === context.optimisticId ? message : m,
-                  ),
-                }
-              : page,
-          ),
-        };
-      });
-    },
-
-    onSettled: async () => {
-      // Refresh the lists and detail: preview, timestamps, and a possible
-      // SNOOZED→OPEN transition. The nested messages key refetching too is
-      // harmless — the cache already matches the server.
-      await queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      appendMessageToCache(queryClient, message, context.optimisticId);
+      applyMessageToConversationCaches(queryClient, message);
     },
   });
 }
