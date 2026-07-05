@@ -1,8 +1,6 @@
+import { redirect } from "next/navigation";
+
+// The dashboard guard bounces unauthenticated visitors on to /login.
 export default function Home() {
-  return (
-    <main>
-      <h1>Helio</h1>
-      <p>AI-powered customer communication platform</p>
-    </main>
-  );
+  redirect("/inbox");
 }
