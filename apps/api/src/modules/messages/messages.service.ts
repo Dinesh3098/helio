@@ -1,0 +1,242 @@
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, In, Repository } from 'typeorm';
+import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import {
+  Conversation,
+  ConversationStatus,
+  Message,
+  MessageSenderType,
+  MessageType,
+  User,
+} from '../../database/entities';
+import { CreateMessageDto } from './dto/create-message.dto';
+import {
+  MessageResponseDto,
+  MessagesPageDto,
+} from './dto/message-response.dto';
+import { QueryMessagesDto } from './dto/query-messages.dto';
+
+/** Keyset cursor: strictly-descending (created_at, id) position. */
+interface MessageCursor {
+  t: string;
+  id: string;
+}
+
+const PREVIEW_LENGTH = 140;
+
+@Injectable()
+export class MessagesService {
+  constructor(
+    @InjectRepository(Message)
+    private readonly messagesRepository: Repository<Message>,
+    @InjectRepository(Conversation)
+    private readonly conversationsRepository: Repository<Conversation>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
+    private readonly dataSource: DataSource,
+  ) {}
+
+  /**
+   * Newest page first (no cursor), each response ordered oldest→newest for
+   * direct rendering. Keyset pagination on (created_at, id) walks toward
+   * older messages and stays stable while new messages arrive — an offset
+   * would shift and duplicate rows mid-scroll.
+   */
+  async listForConversation(
+    workspaceId: string,
+    conversationId: string,
+    query: QueryMessagesDto,
+  ): Promise<MessagesPageDto> {
+    const conversation = await this.findInWorkspace(
+      workspaceId,
+      conversationId,
+    );
+
+    const qb = this.messagesRepository
+      .createQueryBuilder('m')
+      .where('m.conversation_id = :conversationId', { conversationId })
+      .orderBy('m.created_at', 'DESC')
+      .addOrderBy('m.id', 'DESC')
+      // One extra row answers "is there an older page?" without a COUNT.
+      .limit(query.limit + 1);
+
+    if (query.cursor) {
+      const cursor = this.decodeCursor(query.cursor);
+      qb.andWhere('(m.created_at, m.id) < (:cursorTs, :cursorId)', {
+        cursorTs: cursor.t,
+        cursorId: cursor.id,
+      });
+    }
+
+    const rows = await qb.getMany();
+    const hasOlder = rows.length > query.limit;
+    const page = rows.slice(0, query.limit);
+    const oldest = page.at(-1);
+    const nextCursor = hasOlder && oldest ? this.encodeCursor(oldest) : null;
+    page.reverse();
+
+    const userNames = await this.loadUserNames(page);
+    return {
+      data: page.map((message) =>
+        this.toResponse(message, this.senderName(message, conversation, userNames)),
+      ),
+      nextCursor,
+    };
+  }
+
+  async createAgentMessage(
+    user: AuthenticatedUser,
+    workspaceId: string,
+    conversationId: string,
+    dto: CreateMessageDto,
+  ): Promise<MessageResponseDto> {
+    const conversation = await this.findInWorkspace(
+      workspaceId,
+      conversationId,
+    );
+    const message = await this.append(conversation, {
+      senderType: MessageSenderType.USER,
+      senderId: user.id,
+      content: dto.content,
+    });
+    return this.toResponse(message, user.name);
+  }
+
+  /**
+   * Channel-agnostic core, so the future chat widget can append CONTACT
+   * messages through the same rules. The message insert and the
+   * conversation's denormalized last-message fields commit atomically —
+   * a half-applied pair would corrupt the inbox ordering.
+   */
+  private async append(
+    conversation: Conversation,
+    input: {
+      senderType: MessageSenderType;
+      senderId: string | null;
+      content: string;
+    },
+  ): Promise<Message> {
+    if (conversation.status === ConversationStatus.RESOLVED) {
+      throw new ConflictException(
+        'Resolved conversations cannot receive new messages. Reopen the conversation first.',
+      );
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const message = await manager.getRepository(Message).save(
+        manager.getRepository(Message).create({
+          conversationId: conversation.id,
+          senderType: input.senderType,
+          senderId: input.senderId,
+          content: input.content,
+          messageType: MessageType.TEXT,
+        }),
+      );
+
+      // Activity in a snoozed conversation pulls it back into the inbox.
+      await manager.getRepository(Conversation).update(conversation.id, {
+        lastMessagePreview: this.toPreview(input.content),
+        lastMessageAt: message.createdAt,
+        ...(conversation.status === ConversationStatus.SNOOZED
+          ? { status: ConversationStatus.OPEN }
+          : {}),
+      });
+
+      return message;
+    });
+  }
+
+  private async findInWorkspace(
+    workspaceId: string,
+    conversationId: string,
+  ): Promise<Conversation> {
+    const conversation = await this.conversationsRepository.findOne({
+      where: { id: conversationId, workspaceId },
+      relations: { contact: true },
+    });
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+    return conversation;
+  }
+
+  /** One IN query resolves every agent name on the page — never per row. */
+  private async loadUserNames(
+    messages: Message[],
+  ): Promise<Map<string, string>> {
+    const userIds = [
+      ...new Set(
+        messages
+          .filter((m) => m.senderType === MessageSenderType.USER && m.senderId)
+          .map((m) => m.senderId as string),
+      ),
+    ];
+    if (userIds.length === 0) return new Map();
+
+    const users = await this.usersRepository.find({
+      where: { id: In(userIds) },
+      select: { id: true, name: true },
+    });
+    return new Map(users.map((user) => [user.id, user.name]));
+  }
+
+  private senderName(
+    message: Message,
+    conversation: Conversation,
+    userNames: Map<string, string>,
+  ): string | null {
+    if (message.senderType === MessageSenderType.CONTACT) {
+      return conversation.contact.name;
+    }
+    if (!message.senderId) return null;
+    return userNames.get(message.senderId) ?? 'Former teammate';
+  }
+
+  private toResponse(
+    message: Message,
+    senderName: string | null,
+  ): MessageResponseDto {
+    return {
+      id: message.id,
+      conversationId: message.conversationId,
+      senderType: message.senderType,
+      senderId: message.senderId,
+      senderName,
+      content: message.content,
+      messageType: message.messageType,
+      createdAt: message.createdAt,
+    };
+  }
+
+  private toPreview(content: string): string {
+    return content.replace(/\s+/g, ' ').trim().slice(0, PREVIEW_LENGTH);
+  }
+
+  private encodeCursor(message: Message): string {
+    const cursor: MessageCursor = {
+      t: message.createdAt.toISOString(),
+      id: message.id,
+    };
+    return Buffer.from(JSON.stringify(cursor)).toString('base64url');
+  }
+
+  private decodeCursor(raw: string): MessageCursor {
+    try {
+      const parsed = JSON.parse(
+        Buffer.from(raw, 'base64url').toString('utf8'),
+      ) as MessageCursor;
+      if (typeof parsed.t !== 'string' || typeof parsed.id !== 'string') {
+        throw new Error('malformed');
+      }
+      return parsed;
+    } catch {
+      throw new BadRequestException('Invalid pagination cursor');
+    }
+  }
+}

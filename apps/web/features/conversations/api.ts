@@ -3,6 +3,8 @@ import type {
   Conversation,
   ConversationDetail,
   ConversationStatus,
+  Message,
+  MessagesPage,
   Paginated,
 } from "@/types/api";
 
@@ -18,4 +20,22 @@ export const conversationsApi = {
 
   get: async (id: string) =>
     (await api.get<ConversationDetail>(`/conversations/${id}`)).data,
+};
+
+export const messagesApi = {
+  list: async (conversationId: string, cursor?: string) =>
+    (
+      await api.get<MessagesPage>(
+        `/conversations/${conversationId}/messages`,
+        { params: { cursor } },
+      )
+    ).data,
+
+  send: async (input: { conversationId: string; content: string }) =>
+    (
+      await api.post<Message>(
+        `/conversations/${input.conversationId}/messages`,
+        { content: input.content },
+      )
+    ).data,
 };

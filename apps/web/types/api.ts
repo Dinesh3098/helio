@@ -72,6 +72,26 @@ export interface ConversationDetail extends Conversation {
   messagesCount: number;
 }
 
+/** USER = workspace agent, CONTACT = customer. */
+export type MessageSenderType = "USER" | "CONTACT";
+export type MessageType = "TEXT" | "SYSTEM";
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  senderType: MessageSenderType;
+  senderId: string | null;
+  senderName: string | null;
+  content: string;
+  messageType: MessageType;
+  createdAt: string;
+}
+
+export interface MessagesPage {
+  data: Message[];
+  nextCursor: string | null;
+}
+
 export interface Paginated<T> {
   data: T[];
   total: number;
