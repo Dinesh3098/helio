@@ -4,6 +4,7 @@ import {
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -69,7 +70,7 @@ type SendMessageAck =
   }),
 )
 export class RealtimeGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
   private readonly server: Server;
@@ -87,10 +88,23 @@ export class RealtimeGateway
   ) {}
 
   /**
-   * Handshake auth. Agents: `io(url, { auth: { token } })` with the JWT
-   * access token. Widget visitors: `auth: { visitorToken }`.
+   * Handshake auth runs as Socket.IO middleware, not in handleConnection:
+   * middleware completes BEFORE the connection is admitted, so no event
+   * handler can ever observe a socket whose principal isn't set yet.
+   * (handleConnection is async — authenticating there races against a
+   * client that emits immediately after `connect`.) Rejected sockets get
+   * a connect_error instead of connect-then-disconnect.
+   *
+   * Agents: `io(url, { auth: { token } })` with the JWT access token.
+   * Widget visitors: `auth: { visitorToken }`.
    */
-  async handleConnection(client: GatewaySocket): Promise<void> {
+  afterInit(server: Server): void {
+    server.use((socket: GatewaySocket, next) => {
+      void this.authenticate(socket).then((error) => next(error));
+    });
+  }
+
+  private async authenticate(client: GatewaySocket): Promise<Error | undefined> {
     const auth = client.handshake.auth as {
       token?: unknown;
       visitorToken?: unknown;
@@ -101,14 +115,11 @@ export class RealtimeGateway
         auth.visitorToken,
       );
       if (!visitor) {
-        this.reject(client, 'invalid visitor token');
-        return;
+        this.logger.warn(`socket ${client.id} rejected: invalid visitor token`);
+        return new Error('Unauthorized');
       }
       client.data.visitor = visitor;
-      this.logger.log(
-        `socket ${client.id} connected (visitor contact ${visitor.contactId})`,
-      );
-      return;
+      return undefined;
     }
 
     const user =
@@ -116,13 +127,24 @@ export class RealtimeGateway
         ? await this.authService.verifyAccessToken(auth.token)
         : null;
     if (!user) {
-      this.reject(client, 'invalid token');
-      return;
+      this.logger.warn(`socket ${client.id} rejected: invalid token`);
+      return new Error('Unauthorized');
     }
-
     client.data.user = user;
-    this.connectionRegistry.add(user.id, client.id);
-    this.logger.log(`socket ${client.id} connected (user ${user.id})`);
+    return undefined;
+  }
+
+  /** Runs only for sockets the auth middleware admitted. */
+  handleConnection(client: GatewaySocket): void {
+    const { user, visitor } = client.data;
+    if (user) {
+      this.connectionRegistry.add(user.id, client.id);
+      this.logger.log(`socket ${client.id} connected (user ${user.id})`);
+    } else if (visitor) {
+      this.logger.log(
+        `socket ${client.id} connected (visitor contact ${visitor.contactId})`,
+      );
+    }
   }
 
   /** Socket.IO removes the socket from all rooms itself on disconnect. */
@@ -298,12 +320,6 @@ export class RealtimeGateway
       throw new WsException('You do not have access to this conversation');
     }
     return workspaceId;
-  }
-
-  private reject(client: Socket, reason: string): void {
-    this.logger.warn(`socket ${client.id} rejected: ${reason}`);
-    client.emit(SERVER_EVENTS.messageError, { message: 'Unauthorized' });
-    client.disconnect(true);
   }
 
   private throttle(

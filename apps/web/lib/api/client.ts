@@ -1,5 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { tokenStore } from "@/lib/auth/token-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 export const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -13,6 +14,12 @@ api.interceptors.request.use((config) => {
   const token = tokenStore.getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Tenant scope. Required by the backend whenever the user belongs to
+  // more than one workspace; harmless (and self-consistent) otherwise.
+  const workspaceId = useWorkspaceStore.getState().activeWorkspaceId;
+  if (workspaceId) {
+    config.headers["x-workspace-id"] = workspaceId;
   }
   return config;
 });

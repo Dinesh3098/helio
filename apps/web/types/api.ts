@@ -22,6 +22,12 @@ export interface AuthResponse {
 
 export type WorkspaceRole = "OWNER" | "ADMIN" | "AGENT";
 
+export interface MyWorkspace {
+  workspaceId: string;
+  name: string;
+  role: WorkspaceRole;
+}
+
 export interface WorkspaceMember {
   id: string;
   userId: string;
@@ -97,4 +103,54 @@ export interface Paginated<T> {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface KbCategory {
+  id: string;
+  name: string;
+  displayOrder: number;
+  articlesCount: number;
+  publishedCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KbArticleSummary {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  isPublished: boolean;
+  categoryId: string;
+  categoryName: string;
+  updatedByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KbArticle extends KbArticleSummary {
+  content: string;
+  createdByName: string | null;
+}
+
+export interface PublicArticleSummary {
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  updatedAt: string;
+}
+
+export interface PublicHelpCenter {
+  workspaceName: string;
+  categories: {
+    id: string;
+    name: string;
+    articles: PublicArticleSummary[];
+  }[];
+}
+
+export interface PublicArticle extends PublicArticleSummary {
+  content: string;
+  categoryName: string;
+  workspaceName: string;
 }

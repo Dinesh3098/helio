@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { tokenStore } from "@/lib/auth/token-store";
 import { queryKeys } from "@/lib/query/keys";
 import { disconnectSocket } from "@/lib/realtime/socket";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import type { AuthResponse } from "@/types/api";
 import { authApi } from "./api";
 
@@ -29,6 +30,12 @@ function useAuthSuccess() {
   return (response: AuthResponse) => {
     tokenStore.setTokens(response.accessToken, response.refreshToken);
     queryClient.setQueryData(queryKeys.me, response.user);
+    if (response.workspace) {
+      // Signup returns the newly created workspace — activate it now.
+      // Login doesn't; the dashboard bootstrap resolves it (and discards
+      // a stale persisted choice from a previously logged-in account).
+      useWorkspaceStore.getState().setActiveWorkspace(response.workspace.id);
+    }
     router.replace("/inbox");
   };
 }
@@ -56,6 +63,7 @@ export function useLogout() {
     onSettled: () => {
       disconnectSocket();
       tokenStore.clear();
+      useWorkspaceStore.getState().clearActiveWorkspace();
       queryClient.clear();
       router.replace("/login");
     },

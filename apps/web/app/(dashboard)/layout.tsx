@@ -7,6 +7,7 @@ import { TopNav } from "@/components/layout/top-nav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/features/auth/hooks";
 import { useRealtimeConnection } from "@/features/conversations/realtime";
+import { useWorkspaceBootstrap } from "@/features/workspace/hooks";
 
 export default function DashboardLayout({
   children,
@@ -16,6 +17,9 @@ export default function DashboardLayout({
   const { data: me, isPending, isError } = useMe();
   const router = useRouter();
   useRealtimeConnection(me?.id);
+  // Workspace-scoped pages must not render (and fire queries) until the
+  // x-workspace-id the interceptor sends is confirmed valid.
+  const workspaceReady = useWorkspaceBootstrap(!!me);
 
   useEffect(() => {
     if (isError) {
@@ -23,7 +27,7 @@ export default function DashboardLayout({
     }
   }, [isError, router]);
 
-  if (isPending || isError || !me) {
+  if (isPending || isError || !me || !workspaceReady) {
     return (
       <div className="flex h-svh flex-col">
         <div className="flex h-14 items-center gap-3 border-b px-4">
