@@ -13,7 +13,7 @@ AI-powered customer communication platform. Helio lets businesses talk to their 
 | Cache / Queues  | Redis (Upstash), BullMQ                      |
 | Realtime        | Socket.IO                                    |
 | Email           | Resend                                       |
-| AI              | OpenAI                                       |
+| AI              | Gemini                                       |
 
 ## Monorepo Structure
 
