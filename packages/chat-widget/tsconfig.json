@@ -1,5 +1,15 @@
 {
   "extends": "@helio/config/typescript/base.json",
-  "include": ["src"],
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src", "vite.loader.config.ts", "vite.app.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

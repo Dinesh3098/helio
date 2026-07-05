@@ -1,0 +1,377 @@
+:host {
+  all: initial;
+}
+
+.helio-root {
+  --helio-brand: #4f46e5;
+  --helio-brand-dark: #4338ca;
+  --helio-bg: #ffffff;
+  --helio-text: #111827;
+  --helio-muted: #6b7280;
+  --helio-border: #e5e7eb;
+  --helio-bubble: #f3f4f6;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--helio-text);
+}
+
+/* ---------- Launcher ---------- */
+
+.helio-launcher {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: var(--helio-brand);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  transition: transform 0.15s ease, background 0.15s ease;
+  z-index: 2147483000;
+}
+.helio-launcher:hover {
+  transform: scale(1.06);
+  background: var(--helio-brand-dark);
+}
+.helio-launcher:focus-visible {
+  outline: 3px solid #c7d2fe;
+  outline-offset: 2px;
+}
+.helio-launcher svg {
+  width: 26px;
+  height: 26px;
+}
+
+.helio-unread {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Panel ---------- */
+
+.helio-panel {
+  position: fixed;
+  bottom: 92px;
+  right: 20px;
+  width: 380px;
+  height: min(600px, calc(100vh - 120px));
+  background: var(--helio-bg);
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.24);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 2147483000;
+  transform-origin: bottom right;
+  animation: helio-pop 0.18s ease;
+}
+.helio-panel--hidden {
+  display: none;
+}
+
+@keyframes helio-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .helio-panel {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+}
+
+/* ---------- Header ---------- */
+
+.helio-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--helio-brand);
+  color: #fff;
+}
+.helio-header-info {
+  flex: 1;
+  min-width: 0;
+}
+.helio-header-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.helio-header-subtitle {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.helio-icon-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.helio-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.helio-icon-btn:focus-visible {
+  outline: 2px solid #fff;
+}
+.helio-icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Thread ---------- */
+
+.helio-thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.helio-row {
+  display: flex;
+  flex-direction: column;
+  max-width: 82%;
+}
+.helio-row--mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.helio-row--theirs {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.helio-bubble {
+  padding: 9px 13px;
+  border-radius: 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.helio-bubble--mine {
+  background: var(--helio-brand);
+  color: #fff;
+  border-bottom-right-radius: 5px;
+}
+.helio-bubble--theirs {
+  background: var(--helio-bubble);
+  color: var(--helio-text);
+  border-bottom-left-radius: 5px;
+}
+.helio-bubble--pending {
+  opacity: 0.6;
+}
+.helio-bubble--failed {
+  opacity: 0.6;
+  outline: 1px solid #ef4444;
+}
+
+.helio-meta {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--helio-muted);
+}
+
+.helio-retry-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #ef4444;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.helio-load-older {
+  align-self: center;
+  border: 1px solid var(--helio-border);
+  background: var(--helio-bg);
+  color: var(--helio-muted);
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.helio-load-older:hover {
+  color: var(--helio-text);
+}
+
+/* ---------- States ---------- */
+
+.helio-state,
+.helio-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+}
+.helio-empty {
+  flex: initial;
+  margin: auto 0;
+}
+.helio-state-title {
+  margin: 0;
+  font-weight: 600;
+}
+.helio-state-text {
+  margin: 0;
+  color: var(--helio-muted);
+  font-size: 13px;
+}
+.helio-retry {
+  margin-top: 8px;
+  border: none;
+  border-radius: 8px;
+  background: var(--helio-brand);
+  color: #fff;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.helio-retry:hover {
+  background: var(--helio-brand-dark);
+}
+
+/* ---------- Typing dots ---------- */
+
+.helio-typing {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.helio-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--helio-muted);
+  animation: helio-bounce 1.2s infinite ease-in-out;
+}
+.helio-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.helio-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes helio-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* ---------- Composer ---------- */
+
+.helio-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--helio-border);
+}
+.helio-input {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--helio-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font: inherit;
+  color: inherit;
+  max-height: 120px;
+  outline: none;
+}
+.helio-input:focus {
+  border-color: var(--helio-brand);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+.helio-send {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--helio-brand);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.helio-send:hover:not(:disabled) {
+  background: var(--helio-brand-dark);
+}
+.helio-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.helio-send svg {
+  width: 18px;
+  height: 18px;
+}
+.helio-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: helio-spin 0.7s linear infinite;
+}
+@keyframes helio-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

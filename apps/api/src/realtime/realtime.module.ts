@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../modules/auth/auth.module';
 import { ConversationsModule } from '../modules/conversations/conversations.module';
 import { MessagesModule } from '../modules/messages/messages.module';
+import { WidgetModule } from '../modules/widget/widget.module';
 import { WorkspaceMembersModule } from '../modules/workspace-members/workspace-members.module';
 import { ConnectionRegistryService } from './connection-registry.service';
 import { RealtimeGateway } from './realtime.gateway';
@@ -12,6 +13,7 @@ import { RealtimeGateway } from './realtime.gateway';
     ConversationsModule,
     MessagesModule,
     WorkspaceMembersModule,
+    WidgetModule,
   ],
   providers: [RealtimeGateway, ConnectionRegistryService],
 })
