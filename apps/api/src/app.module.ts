@@ -9,6 +9,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WorkspaceMembersModule } from './modules/workspace-members/workspace-members.module';
+import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
@@ -43,6 +44,7 @@ import { RedisModule } from './redis/redis.module';
     HealthModule,
     AuthModule,
     WorkspaceMembersModule,
+    WorkspacesModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
 })
