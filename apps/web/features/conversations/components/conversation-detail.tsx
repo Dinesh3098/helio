@@ -1,15 +1,16 @@
 "use client";
 
-import { format, formatDistanceToNow } from "date-fns";
-import { MessageSquareDashed, MousePointerClick, Sparkles } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Lock, MousePointerClick, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { InitialsAvatar } from "@/components/shared/initials-avatar";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConversation } from "../hooks";
 import { ChannelIcon, StatusBadge } from "./conversation-badges";
+import { MessageComposer } from "./message-composer";
+import { MessageThread } from "./message-thread";
 
 export function ConversationDetail({ id }: { id: string | null }) {
   const conversation = useConversation(id);
@@ -19,7 +20,7 @@ export function ConversationDetail({ id }: { id: string | null }) {
       <EmptyState
         icon={MousePointerClick}
         title="Select a conversation"
-        description="Choose a conversation from the list to see its details."
+        description="Choose a conversation from the list to see its messages."
       />
     );
   }
@@ -49,7 +50,7 @@ export function ConversationDetail({ id }: { id: string | null }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b px-6 py-4">
+      <div className="flex items-center gap-3 border-b px-6 py-3">
         <InitialsAvatar name={detail.contact.name} className="size-10" />
         <div className="min-w-0 flex-1">
           <Link
@@ -58,68 +59,45 @@ export function ConversationDetail({ id }: { id: string | null }) {
           >
             {detail.contact.name}
           </Link>
-          <p className="text-muted-foreground truncate text-sm">
-            {detail.subject ?? detail.contact.email ?? "No subject"}
+          <p className="text-muted-foreground truncate text-xs">
+            {detail.assignee
+              ? `Assigned to ${detail.assignee.name}`
+              : "Unassigned"}
+            {" · "}
+            <span className="capitalize">
+              {detail.priority.toLowerCase()} priority
+            </span>
+            {" · "}
+            {formatDistanceToNow(
+              new Date(detail.lastMessageAt ?? detail.updatedAt),
+              { addSuffix: true },
+            )}
           </p>
         </div>
         <ChannelIcon channel={detail.channel} />
         <StatusBadge status={detail.status} />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 px-6 py-4 text-sm lg:grid-cols-4">
-          <div>
-            <dt className="text-muted-foreground">Assignee</dt>
-            <dd className="mt-1 font-medium">
-              {detail.assignee?.name ?? "Unassigned"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Priority</dt>
-            <dd className="mt-1 font-medium capitalize">
-              {detail.priority.toLowerCase()}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Messages</dt>
-            <dd className="mt-1 font-medium">{detail.messagesCount}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Last activity</dt>
-            <dd className="mt-1 font-medium">
-              {formatDistanceToNow(
-                new Date(detail.lastMessageAt ?? detail.updatedAt),
-                { addSuffix: true },
-              )}
-            </dd>
-          </div>
-        </dl>
+      {detail.aiSummary && (
+        <div className="bg-muted/50 flex items-start gap-2 border-b px-6 py-3">
+          <Sparkles className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <p className="text-muted-foreground line-clamp-2 text-sm">
+            <span className="text-foreground font-medium">AI summary: </span>
+            {detail.aiSummary.summary}
+          </p>
+        </div>
+      )}
 
-        {detail.aiSummary && (
-          <>
-            <Separator />
-            <div className="px-6 py-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Sparkles className="size-4" aria-hidden />
-                AI summary
-                <span className="text-muted-foreground text-xs font-normal">
-                  {format(new Date(detail.aiSummary.updatedAt), "MMM d, yyyy")}
-                </span>
-              </div>
-              <p className="text-muted-foreground mt-2 text-sm">
-                {detail.aiSummary.summary}
-              </p>
-            </div>
-          </>
-        )}
+      <MessageThread conversationId={detail.id} />
 
-        <Separator />
-        <EmptyState
-          icon={MessageSquareDashed}
-          title="Messages coming soon"
-          description="The realtime message thread arrives in the next milestone."
-        />
-      </div>
+      {detail.status === "RESOLVED" ? (
+        <div className="text-muted-foreground flex items-center justify-center gap-2 border-t p-4 text-sm">
+          <Lock className="size-4" aria-hidden />
+          This conversation is resolved. Reopen it to reply.
+        </div>
+      ) : (
+        <MessageComposer conversationId={detail.id} />
+      )}
     </div>
   );
 }
