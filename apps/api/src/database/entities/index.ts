@@ -1,5 +1,6 @@
 import { Contact } from './contact.entity';
 import { Conversation } from './conversation.entity';
+import { ConversationAssignment } from './conversation-assignment.entity';
 import { ConversationSummary } from './conversation-summary.entity';
 import { CustomDomain } from './custom-domain.entity';
 import { EmailAccount } from './email-account.entity';
@@ -14,6 +15,7 @@ import { WorkspaceMember } from './workspace-member.entity';
 
 export * from './contact.entity';
 export * from './conversation.entity';
+export * from './conversation-assignment.entity';
 export * from './conversation-summary.entity';
 export * from './custom-domain.entity';
 export * from './email-account.entity';
@@ -33,6 +35,7 @@ export * from './workspace-member.entity';
 export const entities = [
   Contact,
   Conversation,
+  ConversationAssignment,
   ConversationSummary,
   CustomDomain,
   EmailAccount,
