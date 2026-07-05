@@ -39,6 +39,29 @@ export class WorkspaceMembersService {
     return this.membersRepository.find({ where: { userId }, take: 2 });
   }
 
+  /**
+   * All workspaces the user belongs to, with names — the frontend's
+   * workspace picker. Unlike the rest of this service it is NOT
+   * workspace-scoped: it exists so a multi-workspace user can choose the
+   * x-workspace-id to send everywhere else.
+   */
+  async listForUser(
+    userId: string,
+  ): Promise<
+    { workspaceId: string; name: string; role: WorkspaceMemberRole }[]
+  > {
+    const memberships = await this.membersRepository.find({
+      where: { userId },
+      relations: { workspace: true },
+      order: { createdAt: 'ASC' },
+    });
+    return memberships.map((membership) => ({
+      workspaceId: membership.workspaceId,
+      name: membership.workspace.name,
+      role: membership.role,
+    }));
+  }
+
   async findByIdInWorkspace(
     workspaceId: string,
     memberId: string,

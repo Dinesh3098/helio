@@ -1,5 +1,10 @@
 import { api } from "@/lib/api/client";
-import type { Workspace, WorkspaceMember, WorkspaceRole } from "@/types/api";
+import type {
+  MyWorkspace,
+  Workspace,
+  WorkspaceMember,
+  WorkspaceRole,
+} from "@/types/api";
 
 /** OWNER is never assignable through the API. */
 export type AssignableRole = Exclude<WorkspaceRole, "OWNER">;
@@ -10,6 +15,9 @@ export interface InviteMemberInput {
 }
 
 export const workspaceApi = {
+  /** All workspaces the caller belongs to — needs no workspace header. */
+  mine: async () => (await api.get<MyWorkspace[]>("/workspace/mine")).data,
+
   get: async () => (await api.get<Workspace>("/workspace")).data,
 
   update: async (input: { name: string }) =>
