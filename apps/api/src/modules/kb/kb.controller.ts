@@ -77,6 +77,17 @@ export class KbController {
     return this.categoriesService.list(membership.workspaceId);
   }
 
+  @Get('categories/:id')
+  @Roles(...ALL_ROLES)
+  @ApiOperation({ summary: 'Category detail with article counts' })
+  @ApiOkResponse({ type: CategoryResponseDto })
+  getCategory(
+    @CurrentMembership() membership: WorkspaceMember,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<CategoryResponseDto> {
+    return this.categoriesService.getOne(membership.workspaceId, id);
+  }
+
   @Post('categories')
   @Roles(...ALL_ROLES)
   @ApiOperation({ summary: 'Create a category' })
@@ -101,9 +112,14 @@ export class KbController {
   }
 
   @Delete('categories/:id')
-  @Roles(...ALL_ROLES)
+  // Destructive and structural — reserved for OWNER/ADMIN, unlike article
+  // editing which every workspace member can do.
+  @Roles(WorkspaceMemberRole.OWNER, WorkspaceMemberRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete an empty category (409 if it has articles)' })
+  @ApiOperation({
+    summary:
+      'Delete an empty category (409 if it has articles; owner/admin only)',
+  })
   async deleteCategory(
     @CurrentMembership() membership: WorkspaceMember,
     @Param('id', ParseUUIDPipe) id: string,

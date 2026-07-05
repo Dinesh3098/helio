@@ -37,6 +37,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import type { KbArticleSummary } from "@/types/api";
+import type { ArticleSort } from "../api";
 import { useDeleteArticle, useKbArticles, useKbCategories } from "../hooks";
 
 const PAGE_LIMIT = 20;
@@ -44,11 +45,23 @@ const ALL_CATEGORIES = "all";
 
 type StatusFilter = "all" | "published" | "draft";
 
+const SORT_OPTIONS: {
+  value: string;
+  label: string;
+  sortBy: ArticleSort;
+  sortOrder: "ASC" | "DESC";
+}[] = [
+  { value: "updated", label: "Recently updated", sortBy: "updatedAt", sortOrder: "DESC" },
+  { value: "newest", label: "Newest first", sortBy: "createdAt", sortOrder: "DESC" },
+  { value: "title", label: "Title A–Z", sortBy: "title", sortOrder: "ASC" },
+];
+
 export function ArticlesTable() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState(ALL_CATEGORIES);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sort, setSort] = useState("updated");
   const [page, setPage] = useState(1);
   const [articleToDelete, setArticleToDelete] =
     useState<KbArticleSummary | null>(null);
@@ -57,11 +70,16 @@ export function ArticlesTable() {
   const categories = useKbCategories();
   const deleteArticle = useDeleteArticle();
 
+  const sortOption = SORT_OPTIONS.find((o) => o.value === sort);
+  const searching = debouncedSearch.trim().length > 0;
+
   const articles = useKbArticles({
     search: debouncedSearch,
     categoryId: categoryId === ALL_CATEGORIES ? undefined : categoryId,
     published:
       statusFilter === "all" ? undefined : statusFilter === "published",
+    sortBy: sortOption?.sortBy,
+    sortOrder: sortOption?.sortOrder,
     page,
   });
 
@@ -121,6 +139,30 @@ export function ArticlesTable() {
             <TabsTrigger value="draft">Drafts</TabsTrigger>
           </TabsList>
         </Tabs>
+
+        <Select
+          value={sort}
+          onValueChange={(value) => {
+            setSort(value);
+            resetPage();
+          }}
+          disabled={searching}
+        >
+          <SelectTrigger
+            className="w-44"
+            aria-label="Sort articles"
+            title={searching ? "Search results are ranked by relevance" : undefined}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {articles.isPending ? (
