@@ -54,14 +54,29 @@ export class RolesGuard implements CanActivate {
       request.params.workspaceId ??
       (Array.isArray(headerValue) ? headerValue[0] : headerValue);
 
-    if (!workspaceId || !UUID_PATTERN.test(workspaceId)) {
-      throw new ForbiddenException('Workspace context is required');
+    let membership: WorkspaceMember | null;
+    if (workspaceId) {
+      if (!UUID_PATTERN.test(workspaceId)) {
+        throw new ForbiddenException('Workspace context is required');
+      }
+      membership = await this.workspaceMembersService.findMembership(
+        workspaceId,
+        user.id,
+      );
+    } else {
+      // No explicit workspace: fall back to the user's sole membership.
+      // With several workspaces the caller must disambiguate — guessing
+      // would be a tenant-isolation hazard.
+      const memberships = await this.workspaceMembersService.findByUser(
+        user.id,
+      );
+      if (memberships.length !== 1) {
+        throw new ForbiddenException(
+          'Workspace context is required — send the x-workspace-id header',
+        );
+      }
+      membership = memberships[0] ?? null;
     }
-
-    const membership = await this.workspaceMembersService.findMembership(
-      workspaceId,
-      user.id,
-    );
     if (!membership || !requiredRoles.includes(membership.role)) {
       throw new ForbiddenException('Insufficient workspace permissions');
     }
