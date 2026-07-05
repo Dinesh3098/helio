@@ -39,6 +39,15 @@ export class WorkspaceMembersService {
     return this.membersRepository.find({ where: { userId }, take: 2 });
   }
 
+  async findByIdInWorkspace(
+    workspaceId: string,
+    memberId: string,
+  ): Promise<WorkspaceMember | null> {
+    return this.membersRepository.findOne({
+      where: { id: memberId, workspaceId },
+    });
+  }
+
   async listMembers(workspaceId: string): Promise<MemberResponseDto[]> {
     const members = await this.membersRepository.find({
       where: { workspaceId },
