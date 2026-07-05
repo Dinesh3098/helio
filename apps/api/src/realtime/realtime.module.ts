@@ -16,5 +16,7 @@ import { RealtimeGateway } from './realtime.gateway';
     WidgetModule,
   ],
   providers: [RealtimeGateway, ConnectionRegistryService],
+  // Exported so the email module can broadcast inbound/outbound messages.
+  exports: [RealtimeGateway],
 })
 export class RealtimeModule {}

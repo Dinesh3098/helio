@@ -6,16 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { getSocket, REALTIME } from "@/lib/realtime/socket";
 import { useUiStore } from "@/stores/ui-store";
+import type { ConversationChannel } from "@/types/api";
 import { useSendMessage } from "../hooks";
 
 const TYPING_REEMIT_MS = 2000;
 const TYPING_IDLE_MS = 2500;
 
-export function MessageComposer({ conversationId }: { conversationId: string }) {
+export function MessageComposer({
+  conversationId,
+  channel = "CHAT",
+}: {
+  conversationId: string;
+  channel?: ConversationChannel;
+}) {
   // Draft lives in the UI store so the AI panel can insert/rewrite it.
   const content = useUiStore((s) => s.composerDraft);
   const setContent = useUiStore((s) => s.setComposerDraft);
-  const send = useSendMessage(conversationId);
+  const send = useSendMessage(conversationId, channel);
   const typingRef = useRef<{
     lastSentAt: number;
     idleTimer: ReturnType<typeof setTimeout> | null;
@@ -36,6 +43,8 @@ export function MessageComposer({ conversationId }: { conversationId: string }) 
 
   /** Transient only: re-emitted at most every 2s, auto-stopped when idle. */
   const emitTyping = () => {
+    // Typing indicators are meaningless over email.
+    if (channel === "EMAIL") return;
     const socket = getSocket();
     if (!socket.connected) return;
     const typing = typingRef.current;
@@ -83,7 +92,11 @@ export function MessageComposer({ conversationId }: { conversationId: string }) 
             submit();
           }
         }}
-        placeholder="Write a reply… (Enter to send, Shift+Enter for a new line)"
+        placeholder={
+          channel === "EMAIL"
+            ? "Write an email reply… (Enter to send, Shift+Enter for a new line)"
+            : "Write a reply… (Enter to send, Shift+Enter for a new line)"
+        }
         aria-label="Message"
         rows={2}
         maxLength={10_000}

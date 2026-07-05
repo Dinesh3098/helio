@@ -31,8 +31,15 @@ export class EmailAccount {
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
+  @Column({ name: 'display_name', type: 'varchar', length: 255, nullable: true })
+  displayName: string | null;
+
   @Column({ type: 'varchar', length: 255 })
   provider: string;
+
+  /** ACTIVE accounts send/receive; DISABLED ones are kept but inert. */
+  @Column({ type: 'varchar', length: 32, default: 'ACTIVE' })
+  status: string;
 
   @Column({ name: 'is_verified', type: 'boolean', default: false })
   isVerified: boolean;

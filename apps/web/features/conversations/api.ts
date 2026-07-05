@@ -22,6 +22,17 @@ export const conversationsApi = {
     (await api.get<ConversationDetail>(`/conversations/${id}`)).data,
 };
 
+export const emailApi = {
+  /** Delivers via the workspace's email account AND records the Message. */
+  sendReply: async (input: { conversationId: string; content: string }) =>
+    (
+      await api.post<Message>(
+        `/email/conversations/${input.conversationId}/send`,
+        { content: input.content },
+      )
+    ).data,
+};
+
 export const messagesApi = {
   list: async (conversationId: string, cursor?: string) =>
     (

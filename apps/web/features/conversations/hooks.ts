@@ -19,8 +19,10 @@ import {
   type SendMessageAck,
 } from "@/lib/realtime/socket";
 import type { Message, MessagesPage } from "@/types/api";
+import type { ConversationChannel } from "@/types/api";
 import {
   conversationsApi,
+  emailApi,
   messagesApi,
   type ConversationListParams,
 } from "./api";
@@ -74,16 +76,23 @@ export function isOptimistic(message: Message): boolean {
   return message.id.startsWith(OPTIMISTIC_PREFIX);
 }
 
-export function useSendMessage(conversationId: string) {
+export function useSendMessage(
+  conversationId: string,
+  channel: ConversationChannel = "CHAT",
+) {
   const queryClient = useQueryClient();
   const { data: me } = useMe();
   const messagesKey = queryKeys.messages(conversationId);
 
   return useMutation({
-    // Socket first — the gateway persists via the same MessagesService and
-    // broadcasts to the room. REST is the fallback when the socket is down
-    // (both paths return the identical message shape).
+    // Email replies must go through the provider, so they always take the
+    // email REST endpoint (the backend broadcasts to the room for other
+    // agents). Chat: socket first — the gateway persists via the same
+    // MessagesService and broadcasts; REST is the offline fallback.
     mutationFn: async (content: string) => {
+      if (channel === "EMAIL") {
+        return emailApi.sendReply({ conversationId, content });
+      }
       const socket = getSocket();
       if (socket.connected) {
         const ack = (await socket
@@ -110,6 +119,7 @@ export function useSendMessage(conversationId: string) {
         senderName: me?.name ?? null,
         content,
         messageType: "TEXT",
+        metadata: null,
         createdAt: new Date().toISOString(),
       };
 

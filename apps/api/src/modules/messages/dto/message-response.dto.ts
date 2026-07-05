@@ -1,5 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { MessageSenderType, MessageType } from '../../../database/entities';
+import {
+  MessageSenderType,
+  MessageType,
+  type MessageMetadata,
+} from '../../../database/entities';
 
 export class MessageResponseDto {
   @ApiProperty({ format: 'uuid' })
@@ -25,6 +29,13 @@ export class MessageResponseDto {
 
   @ApiProperty({ enum: MessageType })
   messageType: MessageType;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Channel extras — email envelope (subject/from/to/attachments); null for chat.',
+  })
+  metadata: MessageMetadata | null;
 
   @ApiProperty()
   createdAt: Date;
