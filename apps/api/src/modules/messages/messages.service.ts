@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -109,10 +110,37 @@ export class MessagesService {
   }
 
   /**
-   * Channel-agnostic core, so the future chat widget can append CONTACT
-   * messages through the same rules. The message insert and the
-   * conversation's denormalized last-message fields commit atomically —
-   * a half-applied pair would corrupt the inbox ordering.
+   * Widget path. The conversation is pinned server-side (it comes from
+   * the visitor token, never from client input) and must belong to the
+   * visitor's own contact — one visitor can never write into another's
+   * thread even with a forged conversation id.
+   */
+  async createContactMessage(
+    visitor: { contactId: string; workspaceId: string; conversationId: string },
+    dto: CreateMessageDto,
+  ): Promise<MessageResponseDto> {
+    const conversation = await this.findInWorkspace(
+      visitor.workspaceId,
+      visitor.conversationId,
+    );
+    if (conversation.contactId !== visitor.contactId) {
+      throw new ForbiddenException(
+        'This conversation belongs to another visitor',
+      );
+    }
+    const message = await this.append(conversation, {
+      senderType: MessageSenderType.CONTACT,
+      senderId: visitor.contactId,
+      content: dto.content,
+    });
+    return this.toResponse(message, conversation.contact.name);
+  }
+
+  /**
+   * Channel-agnostic core shared by agent (dashboard) and contact
+   * (widget) writes. The message insert and the conversation's
+   * denormalized last-message fields commit atomically — a half-applied
+   * pair would corrupt the inbox ordering.
    */
   private async append(
     conversation: Conversation,

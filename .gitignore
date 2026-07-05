@@ -25,6 +25,11 @@ out/
 build
 dist
 
+# Widget bundles copied into the dashboard for the /demo page
+# (regenerate with: pnpm --filter @helio/chat-widget build)
+apps/web/public/widget.js
+apps/web/public/widget-app.js
+
 
 # Debug
 npm-debug.log*

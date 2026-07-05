@@ -15,6 +15,8 @@ import { AuthService } from '../modules/auth/auth.service';
 import { ConversationsService } from '../modules/conversations/conversations.service';
 import { MessageResponseDto } from '../modules/messages/dto/message-response.dto';
 import { MessagesService } from '../modules/messages/messages.service';
+import type { VisitorPrincipal } from '../modules/widget/interfaces/visitor-principal.interface';
+import { WidgetAuthService } from '../modules/widget/widget-auth.service';
 import { WorkspaceMembersService } from '../modules/workspace-members/workspace-members.service';
 import { ConnectionRegistryService } from './connection-registry.service';
 import { ConversationRoomDto, SendMessageWsDto } from './dto/ws-payloads.dto';
@@ -26,7 +28,17 @@ import {
 import { SocketRateLimiter } from './socket-rate-limiter';
 import { WsExceptionsFilter } from './ws-exceptions.filter';
 
-type AuthenticatedSocket = Socket & { data: { user: AuthenticatedUser } };
+/**
+ * Two principals share one gateway: dashboard agents (JWT access token in
+ * `auth.token`) and anonymous widget visitors (visitor token in
+ * `auth.visitorToken`). Exactly one is set per socket.
+ */
+interface SocketPrincipals {
+  user?: AuthenticatedUser;
+  visitor?: VisitorPrincipal;
+}
+
+type GatewaySocket = Socket & { data: SocketPrincipals };
 
 type SendMessageAck =
   | { message: MessageResponseDto }
@@ -67,24 +79,44 @@ export class RealtimeGateway
 
   constructor(
     private readonly authService: AuthService,
+    private readonly widgetAuthService: WidgetAuthService,
     private readonly conversationsService: ConversationsService,
     private readonly workspaceMembersService: WorkspaceMembersService,
     private readonly messagesService: MessagesService,
     private readonly connectionRegistry: ConnectionRegistryService,
   ) {}
 
-  /** Handshake auth: `io(url, { auth: { token } })` with the JWT access token. */
-  async handleConnection(client: Socket): Promise<void> {
-    const token: unknown = client.handshake.auth?.token;
-    const user =
-      typeof token === 'string'
-        ? await this.authService.verifyAccessToken(token)
-        : null;
+  /**
+   * Handshake auth. Agents: `io(url, { auth: { token } })` with the JWT
+   * access token. Widget visitors: `auth: { visitorToken }`.
+   */
+  async handleConnection(client: GatewaySocket): Promise<void> {
+    const auth = client.handshake.auth as {
+      token?: unknown;
+      visitorToken?: unknown;
+    };
 
+    if (typeof auth.visitorToken === 'string') {
+      const visitor = await this.widgetAuthService.verifyVisitorToken(
+        auth.visitorToken,
+      );
+      if (!visitor) {
+        this.reject(client, 'invalid visitor token');
+        return;
+      }
+      client.data.visitor = visitor;
+      this.logger.log(
+        `socket ${client.id} connected (visitor contact ${visitor.contactId})`,
+      );
+      return;
+    }
+
+    const user =
+      typeof auth.token === 'string'
+        ? await this.authService.verifyAccessToken(auth.token)
+        : null;
     if (!user) {
-      this.logger.warn(`socket ${client.id} rejected: invalid token`);
-      client.emit(SERVER_EVENTS.messageError, { message: 'Unauthorized' });
-      client.disconnect(true);
+      this.reject(client, 'invalid token');
       return;
     }
 
@@ -94,17 +126,21 @@ export class RealtimeGateway
   }
 
   /** Socket.IO removes the socket from all rooms itself on disconnect. */
-  handleDisconnect(client: AuthenticatedSocket): void {
-    const user = client.data.user;
+  handleDisconnect(client: GatewaySocket): void {
+    const { user, visitor } = client.data;
     if (user) {
       this.connectionRegistry.remove(user.id, client.id);
       this.logger.log(`socket ${client.id} disconnected (user ${user.id})`);
+    } else if (visitor) {
+      this.logger.log(
+        `socket ${client.id} disconnected (visitor contact ${visitor.contactId})`,
+      );
     }
   }
 
   @SubscribeMessage(CLIENT_EVENTS.joinConversation)
   async joinConversation(
-    @ConnectedSocket() client: AuthenticatedSocket,
+    @ConnectedSocket() client: GatewaySocket,
     @MessageBody() payload: ConversationRoomDto,
   ): Promise<void> {
     this.throttle(client, CLIENT_EVENTS.joinConversation, 20, 10_000);
@@ -118,7 +154,7 @@ export class RealtimeGateway
 
   @SubscribeMessage(CLIENT_EVENTS.leaveConversation)
   async leaveConversation(
-    @ConnectedSocket() client: AuthenticatedSocket,
+    @ConnectedSocket() client: GatewaySocket,
     @MessageBody() payload: ConversationRoomDto,
   ): Promise<void> {
     await client.leave(conversationRoom(payload.conversationId));
@@ -133,7 +169,7 @@ export class RealtimeGateway
    */
   @SubscribeMessage(CLIENT_EVENTS.sendMessage)
   async sendMessage(
-    @ConnectedSocket() client: AuthenticatedSocket,
+    @ConnectedSocket() client: GatewaySocket,
     @MessageBody() payload: SendMessageWsDto,
   ): Promise<SendMessageAck> {
     try {
@@ -143,12 +179,18 @@ export class RealtimeGateway
         payload.conversationId,
       );
 
-      const message = await this.messagesService.createAgentMessage(
-        client.data.user,
-        workspaceId,
-        payload.conversationId,
-        { content: payload.content },
-      );
+      const message = client.data.visitor
+        ? await this.messagesService.createContactMessage(
+            client.data.visitor,
+            { content: payload.content },
+          )
+        : await this.messagesService.createAgentMessage(
+            // authorizeConversation guarantees one principal exists.
+            client.data.user as AuthenticatedUser,
+            workspaceId,
+            payload.conversationId,
+            { content: payload.content },
+          );
 
       const room = conversationRoom(payload.conversationId);
       this.server.to(room).emit(SERVER_EVENTS.messageCreated, message);
@@ -170,7 +212,7 @@ export class RealtimeGateway
 
   @SubscribeMessage(CLIENT_EVENTS.typingStart)
   typingStart(
-    @ConnectedSocket() client: AuthenticatedSocket,
+    @ConnectedSocket() client: GatewaySocket,
     @MessageBody() payload: ConversationRoomDto,
   ): void {
     this.broadcastTyping(client, payload, SERVER_EVENTS.typingStarted);
@@ -178,7 +220,7 @@ export class RealtimeGateway
 
   @SubscribeMessage(CLIENT_EVENTS.typingStop)
   typingStop(
-    @ConnectedSocket() client: AuthenticatedSocket,
+    @ConnectedSocket() client: GatewaySocket,
     @MessageBody() payload: ConversationRoomDto,
   ): void {
     this.broadcastTyping(client, payload, SERVER_EVENTS.typingStopped);
@@ -195,7 +237,7 @@ export class RealtimeGateway
    * on a typing indicator would be noisier than the spam itself.
    */
   private broadcastTyping(
-    client: AuthenticatedSocket,
+    client: GatewaySocket,
     payload: ConversationRoomDto,
     event: string,
   ): void {
@@ -204,21 +246,44 @@ export class RealtimeGateway
     const room = conversationRoom(payload.conversationId);
     if (!client.rooms.has(room)) return;
 
+    const sender = client.data.user
+      ? { userId: client.data.user.id, name: client.data.user.name }
+      : {
+          userId: client.data.visitor?.contactId ?? '',
+          name: client.data.visitor?.name ?? 'Visitor',
+        };
+
     client.to(room).emit(event, {
       conversationId: payload.conversationId,
-      userId: client.data.user.id,
-      name: client.data.user.name,
+      ...sender,
     });
   }
 
   /**
-   * Tenancy gate: the conversation's workspace must have the caller as a
-   * member. Returns the workspaceId for the follow-up service call.
+   * Tenancy gate. Visitors are pinned to the single conversation embedded
+   * in their token — no lookup, no way to reach another thread. Agents
+   * are checked against the conversation's workspace membership in the
+   * database. Returns the workspaceId for the follow-up service call.
    */
   private async authorizeConversation(
-    client: AuthenticatedSocket,
+    client: GatewaySocket,
     conversationId: string,
   ): Promise<string> {
+    const { user, visitor } = client.data;
+
+    if (visitor) {
+      if (conversationId !== visitor.conversationId) {
+        throw new WsException(
+          'You do not have access to this conversation',
+        );
+      }
+      return visitor.workspaceId;
+    }
+
+    if (!user) {
+      throw new WsException('Unauthorized');
+    }
+
     const workspaceId =
       await this.conversationsService.getWorkspaceId(conversationId);
     if (!workspaceId) {
@@ -227,7 +292,7 @@ export class RealtimeGateway
 
     const membership = await this.workspaceMembersService.findMembership(
       workspaceId,
-      client.data.user.id,
+      user.id,
     );
     if (!membership) {
       throw new WsException('You do not have access to this conversation');
@@ -235,8 +300,14 @@ export class RealtimeGateway
     return workspaceId;
   }
 
+  private reject(client: Socket, reason: string): void {
+    this.logger.warn(`socket ${client.id} rejected: ${reason}`);
+    client.emit(SERVER_EVENTS.messageError, { message: 'Unauthorized' });
+    client.disconnect(true);
+  }
+
   private throttle(
-    client: AuthenticatedSocket,
+    client: GatewaySocket,
     event: string,
     maxEvents: number,
     windowMs: number,

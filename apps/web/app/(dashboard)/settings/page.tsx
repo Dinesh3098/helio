@@ -44,10 +44,21 @@ export default function SettingsPage() {
           ) : workspace.isError ? (
             <ErrorState error={workspace.error} onRetry={workspace.refetch} />
           ) : (
-            <WorkspaceSettingsForm
-              workspace={workspace.data}
-              canEdit={viewer?.role === "OWNER"}
-            />
+            <div className="space-y-6">
+              <WorkspaceSettingsForm
+                workspace={workspace.data}
+                canEdit={viewer?.role === "OWNER"}
+              />
+              <div className="max-w-md space-y-1">
+                <p className="text-sm font-medium">Workspace ID</p>
+                <p className="text-muted-foreground font-mono text-xs">
+                  {workspace.data.id}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Used to embed the chat widget on your website.
+                </p>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

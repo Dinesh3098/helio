@@ -1,18 +1,22 @@
 {
   "name": "@helio/chat-widget",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "private": true,
-  "exports": {
-    ".": "./src/index.ts"
-  },
   "scripts": {
+    "build": "vite build -c vite.loader.config.ts && vite build -c vite.app.config.ts && node scripts/sync-demo.mjs",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
     "@helio/config": "workspace:*",
+    "@preact/preset-vite": "^2.10.5",
     "eslint": "^9.39.1",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vite": "^8.1.3"
+  },
+  "dependencies": {
+    "preact": "^10.29.4",
+    "socket.io-client": "^4.8.3"
   }
 }

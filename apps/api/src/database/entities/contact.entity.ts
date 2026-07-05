@@ -16,6 +16,10 @@ import { Workspace } from './workspace.entity';
  */
 @Entity('contacts')
 @Index(['workspaceId', 'email'])
+@Index(['workspaceId', 'visitorId'], {
+  unique: true,
+  where: '"visitor_id" IS NOT NULL',
+})
 export class Contact {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -35,6 +39,15 @@ export class Contact {
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   phone: string | null;
+
+  /**
+   * Anonymous chat-widget identity: a UUID minted by the widget and kept
+   * in the visitor's localStorage. Unique per workspace so the same
+   * browser maps to exactly one contact. Null for contacts that arrived
+   * through other channels.
+   */
+  @Column({ name: 'visitor_id', type: 'uuid', nullable: true })
+  visitorId: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
