@@ -205,6 +205,18 @@ export class ConversationsService {
     return this.list(workspaceId, scoped);
   }
 
+  /**
+   * Lean tenancy lookup for the realtime gateway: which workspace owns
+   * this conversation? No relations, two columns.
+   */
+  async getWorkspaceId(conversationId: string): Promise<string | null> {
+    const conversation = await this.conversationsRepository.findOne({
+      where: { id: conversationId },
+      select: { id: true, workspaceId: true },
+    });
+    return conversation?.workspaceId ?? null;
+  }
+
   private baseQuery(workspaceId: string): SelectQueryBuilder<Conversation> {
     return this.conversationsRepository
       .createQueryBuilder('c')

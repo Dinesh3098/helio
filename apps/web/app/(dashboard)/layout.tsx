@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { TopNav } from "@/components/layout/top-nav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/features/auth/hooks";
+import { useRealtimeConnection } from "@/features/conversations/realtime";
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,7 @@ export default function DashboardLayout({
 }) {
   const { data: me, isPending, isError } = useMe();
   const router = useRouter();
+  useRealtimeConnection(me?.id);
 
   useEffect(() => {
     if (isError) {

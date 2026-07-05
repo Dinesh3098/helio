@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { tokenStore } from "@/lib/auth/token-store";
 import { queryKeys } from "@/lib/query/keys";
+import { disconnectSocket } from "@/lib/realtime/socket";
 import type { AuthResponse } from "@/types/api";
 import { authApi } from "./api";
 
@@ -53,6 +54,7 @@ export function useLogout() {
       }
     },
     onSettled: () => {
+      disconnectSocket();
       tokenStore.clear();
       queryClient.clear();
       router.replace("/login");

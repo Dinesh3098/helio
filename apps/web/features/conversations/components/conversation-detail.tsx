@@ -12,7 +12,13 @@ import { ChannelIcon, StatusBadge } from "./conversation-badges";
 import { MessageComposer } from "./message-composer";
 import { MessageThread } from "./message-thread";
 
-export function ConversationDetail({ id }: { id: string | null }) {
+export function ConversationDetail({
+  id,
+  typingNames = [],
+}: {
+  id: string | null;
+  typingNames?: string[];
+}) {
   const conversation = useConversation(id);
 
   if (id === null) {
@@ -89,6 +95,17 @@ export function ConversationDetail({ id }: { id: string | null }) {
       )}
 
       <MessageThread conversationId={detail.id} />
+
+      {typingNames.length > 0 && (
+        <p
+          className="text-muted-foreground px-6 pb-1 text-xs italic"
+          role="status"
+          aria-live="polite"
+        >
+          {typingNames.join(", ")} {typingNames.length === 1 ? "is" : "are"}{" "}
+          typing…
+        </p>
+      )}
 
       {detail.status === "RESOLVED" ? (
         <div className="text-muted-foreground flex items-center justify-center gap-2 border-t p-4 text-sm">

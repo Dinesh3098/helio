@@ -6,9 +6,11 @@ import { useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { PaginationControls } from "@/components/shared/pagination-controls";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useUiStore } from "@/stores/ui-store";
 import type { ConversationStatus } from "@/types/api";
 import { useConversations } from "../hooks";
 import { ChannelIcon, StatusBadge } from "./conversation-badges";
@@ -26,6 +28,7 @@ export function ConversationList({
 }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("OPEN");
   const [page, setPage] = useState(1);
+  const unreadCounts = useUiStore((s) => s.unreadCounts);
 
   const conversations = useConversations({
     status: statusFilter === "ALL" ? undefined : statusFilter,
@@ -76,6 +79,7 @@ export function ConversationList({
           <ul className="divide-y" aria-label="Conversations">
             {conversations.data.data.map((conversation) => {
               const selected = conversation.id === selectedId;
+              const unread = unreadCounts[conversation.id] ?? 0;
               const timestamp =
                 conversation.lastMessageAt ?? conversation.updatedAt;
               return (
@@ -94,6 +98,14 @@ export function ConversationList({
                       <span className="min-w-0 flex-1 truncate font-medium">
                         {conversation.contactName}
                       </span>
+                      {unread > 0 && !selected && (
+                        <Badge
+                          className="h-5 min-w-5 shrink-0 rounded-full px-1.5"
+                          aria-label={`${unread} unread messages`}
+                        >
+                          {unread}
+                        </Badge>
+                      )}
                       <span className="text-muted-foreground shrink-0 text-xs">
                         {formatDistanceToNow(new Date(timestamp), {
                           addSuffix: true,

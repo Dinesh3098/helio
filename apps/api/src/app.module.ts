@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { MessagesModule } from './modules/messages/messages.module';
+import { RealtimeModule } from './realtime/realtime.module';
 import { WorkspaceMembersModule } from './modules/workspace-members/workspace-members.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { RedisModule } from './redis/redis.module';
@@ -51,6 +52,7 @@ import { RedisModule } from './redis/redis.module';
     ContactsModule,
     ConversationsModule,
     MessagesModule,
+    RealtimeModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
 })
