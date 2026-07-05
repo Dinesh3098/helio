@@ -21,7 +21,9 @@ export class User {
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
-  @Column({ name: 'password_hash', type: 'varchar', length: 255 })
+  // select: false keeps the hash out of every query unless a caller
+  // explicitly addSelect()s it (login only).
+  @Column({ name: 'password_hash', type: 'varchar', length: 255, select: false })
   passwordHash: string;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })

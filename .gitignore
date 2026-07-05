@@ -40,6 +40,7 @@ next-env.d.ts
 
 # Docs (committed at the end of the project)
 docs/
+PROJECT_CONTEXT.md
 
 # IDE
 .vscode/

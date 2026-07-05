@@ -7,6 +7,8 @@ import configuration, { AppConfig } from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { WorkspaceMembersModule } from './modules/workspace-members/workspace-members.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
@@ -39,6 +41,8 @@ import { RedisModule } from './redis/redis.module';
     DatabaseModule,
     RedisModule,
     HealthModule,
+    AuthModule,
+    WorkspaceMembersModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
 })
