@@ -6,7 +6,11 @@ import Link from "next/link";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { InitialsAvatar } from "@/components/shared/initials-avatar";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AiPanel } from "@/features/ai/components/ai-panel";
+import { cn } from "@/lib/utils";
+import { useUiStore } from "@/stores/ui-store";
 import { useConversation } from "../hooks";
 import { ChannelIcon, StatusBadge } from "./conversation-badges";
 import { MessageComposer } from "./message-composer";
@@ -20,6 +24,8 @@ export function ConversationDetail({
   typingNames?: string[];
 }) {
   const conversation = useConversation(id);
+  const aiPanelOpen = useUiStore((s) => s.aiPanelOpen);
+  const toggleAiPanel = useUiStore((s) => s.toggleAiPanel);
 
   if (id === null) {
     return (
@@ -82,39 +88,48 @@ export function ConversationDetail({
         </div>
         <ChannelIcon channel={detail.channel} />
         <StatusBadge status={detail.status} />
+        <Button
+          variant={aiPanelOpen ? "secondary" : "ghost"}
+          size="sm"
+          aria-label="Toggle AI assistant"
+          aria-pressed={aiPanelOpen}
+          onClick={toggleAiPanel}
+        >
+          <Sparkles
+            className={cn("size-4", aiPanelOpen && "text-primary")}
+            aria-hidden
+          />
+          AI
+        </Button>
       </div>
 
-      {detail.aiSummary && (
-        <div className="bg-muted/50 flex items-start gap-2 border-b px-6 py-3">
-          <Sparkles className="mt-0.5 size-4 shrink-0" aria-hidden />
-          <p className="text-muted-foreground line-clamp-2 text-sm">
-            <span className="text-foreground font-medium">AI summary: </span>
-            {detail.aiSummary.summary}
-          </p>
+      <div className="flex min-h-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <MessageThread conversationId={detail.id} />
+
+          {typingNames.length > 0 && (
+            <p
+              className="text-muted-foreground px-6 pb-1 text-xs italic"
+              role="status"
+              aria-live="polite"
+            >
+              {typingNames.join(", ")}{" "}
+              {typingNames.length === 1 ? "is" : "are"} typing…
+            </p>
+          )}
+
+          {detail.status === "RESOLVED" ? (
+            <div className="text-muted-foreground flex items-center justify-center gap-2 border-t p-4 text-sm">
+              <Lock className="size-4" aria-hidden />
+              This conversation is resolved. Reopen it to reply.
+            </div>
+          ) : (
+            <MessageComposer conversationId={detail.id} />
+          )}
         </div>
-      )}
 
-      <MessageThread conversationId={detail.id} />
-
-      {typingNames.length > 0 && (
-        <p
-          className="text-muted-foreground px-6 pb-1 text-xs italic"
-          role="status"
-          aria-live="polite"
-        >
-          {typingNames.join(", ")} {typingNames.length === 1 ? "is" : "are"}{" "}
-          typing…
-        </p>
-      )}
-
-      {detail.status === "RESOLVED" ? (
-        <div className="text-muted-foreground flex items-center justify-center gap-2 border-t p-4 text-sm">
-          <Lock className="size-4" aria-hidden />
-          This conversation is resolved. Reopen it to reply.
-        </div>
-      ) : (
-        <MessageComposer conversationId={detail.id} />
-      )}
+        {aiPanelOpen && <AiPanel conversationId={detail.id} />}
+      </div>
     </div>
   );
 }

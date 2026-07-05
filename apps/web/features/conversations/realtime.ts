@@ -59,6 +59,11 @@ export function useConversationRoom(conversationId: string | null): {
 
     const onMessageCreated = (message: Message) => {
       applyMessageToConversationCaches(queryClient, message);
+      // AI outputs (summary/classification/KB) describe the transcript —
+      // a new message makes them refetch-on-demand stale.
+      void queryClient.invalidateQueries({
+        queryKey: ["ai", message.conversationId],
+      });
       if (message.conversationId === conversationId) {
         appendMessageToCache(queryClient, message);
         if (message.senderId) removeTyping(message.senderId);
