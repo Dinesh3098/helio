@@ -9,10 +9,14 @@ import type {
   PublicHelpCenter,
 } from "@/types/api";
 
+export type ArticleSort = "updatedAt" | "createdAt" | "title";
+
 export interface ArticleListParams {
   search?: string;
   categoryId?: string;
   published?: boolean;
+  sortBy?: ArticleSort;
+  sortOrder?: "ASC" | "DESC";
   page: number;
 }
 

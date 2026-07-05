@@ -19,6 +19,8 @@ export const queryKeys = {
     search?: string;
     categoryId?: string;
     published?: boolean;
+    sortBy?: string;
+    sortOrder?: string;
     page: number;
   }) => ["kb", "articles", params] as const,
   kbArticle: (id: string) => ["kb", "articles", id] as const,

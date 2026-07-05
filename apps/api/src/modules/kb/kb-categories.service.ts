@@ -53,6 +53,20 @@ export class KbCategoriesService {
     }));
   }
 
+  async getOne(
+    workspaceId: string,
+    categoryId: string,
+  ): Promise<CategoryResponseDto> {
+    const category = await this.findInWorkspace(workspaceId, categoryId);
+    const [articlesCount, publishedCount] = await Promise.all([
+      this.articlesRepository.count({ where: { workspaceId, categoryId } }),
+      this.articlesRepository.count({
+        where: { workspaceId, categoryId, isPublished: true },
+      }),
+    ]);
+    return { ...this.toBase(category), articlesCount, publishedCount };
+  }
+
   async create(
     workspaceId: string,
     dto: CreateCategoryDto,

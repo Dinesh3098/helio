@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -11,6 +12,11 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+
+const SORT_FIELDS = ['updatedAt', 'createdAt', 'title'] as const;
+const SORT_ORDERS = ['ASC', 'DESC'] as const;
+
+export type ArticleSortField = (typeof SORT_FIELDS)[number];
 
 export class CreateArticleDto {
   @ApiProperty({ example: 'How to install the chat widget' })
@@ -63,6 +69,20 @@ export class QueryArticlesDto {
   })
   @IsBoolean()
   published?: boolean;
+
+  @ApiPropertyOptional({
+    enum: SORT_FIELDS,
+    default: 'updatedAt',
+    description: 'Ignored while searching — results are relevance-ranked.',
+  })
+  @IsOptional()
+  @IsIn(SORT_FIELDS)
+  sortBy: ArticleSortField = 'updatedAt';
+
+  @ApiPropertyOptional({ enum: SORT_ORDERS, default: 'DESC' })
+  @IsOptional()
+  @IsIn(SORT_ORDERS)
+  sortOrder: (typeof SORT_ORDERS)[number] = 'DESC';
 
   @ApiPropertyOptional({ default: 1, minimum: 1 })
   @IsOptional()

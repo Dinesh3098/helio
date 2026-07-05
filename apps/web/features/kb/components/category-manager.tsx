@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useCurrentMember } from "@/features/workspace/hooks";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { KbCategory } from "@/types/api";
 import {
@@ -44,6 +45,9 @@ export function CategoryManager() {
   const create = useCreateCategory();
   const update = useUpdateCategory();
   const remove = useDeleteCategory();
+  const viewer = useCurrentMember();
+  // Backend rule mirrored here: only OWNER/ADMIN may delete categories.
+  const canDelete = viewer?.role === "OWNER" || viewer?.role === "ADMIN";
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<KbCategory | null>(null);
@@ -133,14 +137,16 @@ export function CategoryManager() {
                     >
                       <Pencil className="size-4" aria-hidden />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Delete ${category.name}`}
-                      onClick={() => setToDelete(category)}
-                    >
-                      <Trash2 className="size-4" aria-hidden />
-                    </Button>
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete ${category.name}`}
+                        onClick={() => setToDelete(category)}
+                      >
+                        <Trash2 className="size-4" aria-hidden />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

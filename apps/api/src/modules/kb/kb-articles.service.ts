@@ -38,9 +38,15 @@ export class KbArticlesService {
       });
     }
     if (query.search) {
+      // Relevance ranking wins while searching; sortBy applies otherwise.
       this.applySearch(qb, query.search);
     } else {
-      qb.orderBy('a.updated_at', 'DESC');
+      const SORT_COLUMNS: Record<typeof query.sortBy, string> = {
+        updatedAt: 'a.updated_at',
+        createdAt: 'a.created_at',
+        title: 'a.title',
+      };
+      qb.orderBy(SORT_COLUMNS[query.sortBy], query.sortOrder);
     }
 
     qb.offset(query.skip).limit(query.limit);
