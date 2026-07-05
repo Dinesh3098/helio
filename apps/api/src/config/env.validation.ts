@@ -17,6 +17,8 @@ export const envValidationSchema = Joi.object({
     .uri({ scheme: ['redis', 'rediss'] })
     .required(),
   JWT_SECRET: Joi.string().min(32).required(),
+  JWT_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
+  JWT_REFRESH_EXPIRES_IN_DAYS: Joi.number().integer().min(1).default(30),
   GEMINI_API_KEY: Joi.string().when('NODE_ENV', {
     is: 'production',
     then: Joi.required(),
