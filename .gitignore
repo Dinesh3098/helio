@@ -38,6 +38,9 @@ next-env.d.ts
 # Local tooling
 .claude/
 
+# Docs (committed at the end of the project)
+docs/
+
 # IDE
 .vscode/
 .idea/
