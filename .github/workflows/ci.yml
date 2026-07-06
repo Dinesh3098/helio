@@ -67,6 +67,12 @@ jobs:
         shell: bash
         run: pnpm build 2>&1 | tee build.log
 
+      # Unit + integration + frontend suites. Integration tests provision
+      # their own PostgreSQL/Redis containers (Docker is available on
+      # GitHub runners) and run real TypeORM migrations.
+      - name: Test
+        run: pnpm test
+
       # Fails only on high/critical advisories; low/moderate are reported
       # but do not block the build.
       - name: Security audit
@@ -146,6 +152,34 @@ jobs:
 
       - name: Verify Socket.IO handshake
         run: curl -fsS "http://localhost:4000/socket.io/?EIO=4&transport=polling" | head -c 100
+
+      # Browser E2E against the stack that is already up. The web image
+      # was built with the default NEXT_PUBLIC_API_URL (http://localhost:4000),
+      # which matches the published API port here.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: End-to-end tests
+        env:
+          E2E_WEB_URL: http://localhost:3000
+          E2E_API_URL: http://localhost:4000
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-${{ github.sha }}
+          path: playwright-report/
+          retention-days: 7
 
       - name: Show logs on failure
         if: failure()

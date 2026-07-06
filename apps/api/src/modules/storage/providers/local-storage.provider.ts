@@ -70,6 +70,9 @@ export class LocalStorageProvider implements StorageProvider {
     try {
       await unlink(this.safePath(key));
     } catch (error) {
+      // safePath's not_found must survive — only real fs failures are
+      // remapped to unavailable.
+      if (error instanceof StorageProviderError) throw error;
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
       throw new StorageProviderError(
         "unavailable",

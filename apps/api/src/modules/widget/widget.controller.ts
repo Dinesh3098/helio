@@ -26,6 +26,8 @@ import {
 } from "@nestjs/swagger";
 import type { Response } from "express";
 import { tmpdir } from "node:os";
+import { RealtimeEmitterService } from "../../realtime/realtime-emitter.service";
+import { SERVER_EVENTS } from "../../realtime/realtime.events";
 import { AttachmentsService } from "../attachments/attachments.service";
 import { AttachmentResponseDto } from "../attachments/dto/attachment.dto";
 import { CreateMessageDto } from "../messages/dto/create-message.dto";
@@ -54,6 +56,7 @@ export class WidgetController {
     private readonly widgetService: WidgetService,
     private readonly messagesService: MessagesService,
     private readonly attachmentsService: AttachmentsService,
+    private readonly realtimeEmitter: RealtimeEmitterService,
   ) {}
 
   @Post("session")
@@ -167,10 +170,23 @@ export class WidgetController {
     summary: "Send a visitor message (REST fallback for the socket path)",
   })
   @ApiCreatedResponse({ type: MessageResponseDto })
-  createMessage(
+  async createMessage(
     @CurrentVisitor() visitor: VisitorPrincipal,
     @Body() dto: CreateMessageDto,
   ): Promise<MessageResponseDto> {
-    return this.messagesService.createContactMessage(visitor, dto);
+    const message = await this.messagesService.createContactMessage(
+      visitor,
+      dto,
+    );
+    // REST fallback runs when the visitor's socket is down; the agent
+    // dashboards' sockets are unaffected and must still hear about the
+    // message (the socket path broadcasts in the gateway).
+    this.realtimeEmitter.emitToConversation(
+      message.conversationId,
+      SERVER_EVENTS.messageCreated,
+      message,
+      visitor.workspaceId,
+    );
+    return message;
   }
 }

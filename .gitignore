@@ -55,3 +55,7 @@ PROJECT_CONTEXT.md
 # Misc
 .DS_Store
 *.pem
+
+# Playwright
+test-results/
+playwright-report/
