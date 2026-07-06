@@ -1,3 +1,11 @@
+export interface WidgetAttachment {
+  id?: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  url: string | null;
+}
+
 /** Mirrors the API's MessageResponseDto. USER = agent, CONTACT = visitor. */
 export interface WidgetMessage {
   id: string;
@@ -7,6 +15,7 @@ export interface WidgetMessage {
   senderName: string | null;
   content: string;
   messageType: "TEXT" | "SYSTEM";
+  metadata?: { attachments?: WidgetAttachment[] } | null;
   createdAt: string;
   /** Local-only flags for the optimistic send flow. */
   pending?: boolean;

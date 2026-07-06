@@ -19,6 +19,7 @@ import { ConversationsModule } from './modules/conversations/conversations.modul
 import { MessagesModule } from './modules/messages/messages.module';
 import { ConversationEventsModule } from './events/conversation-events.module';
 import { AiModule } from './modules/ai/ai.module';
+import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { AutomationModule } from './modules/automation/automation.module';
 import { EmailModule } from './modules/email/email.module';
 import { KbModule } from './modules/kb/kb.module';
@@ -93,6 +94,7 @@ import { RedisModule } from './redis/redis.module';
     AiModule,
     EmailModule,
     AutomationModule,
+    AttachmentsModule,
     AdminModule,
     RealtimeModule,
   ],

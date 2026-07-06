@@ -285,7 +285,7 @@ export class EmailService {
         );
       }
 
-      this.realtimeGateway.broadcastMessageCreated(message);
+      this.realtimeGateway.broadcastMessageCreated(message, workspaceId);
       return message;
     } catch (error) {
       this.logger.error(
@@ -388,7 +388,7 @@ export class EmailService {
       metadata,
     );
 
-    this.realtimeGateway.broadcastMessageCreated(message);
+    this.realtimeGateway.broadcastMessageCreated(message, workspaceId);
     this.metricsService.recordEmailInbound();
 
     return {

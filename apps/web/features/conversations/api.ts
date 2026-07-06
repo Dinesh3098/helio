@@ -56,11 +56,15 @@ export const messagesApi = {
       )
     ).data,
 
-  send: async (input: { conversationId: string; content: string }) =>
+  send: async (input: {
+    conversationId: string;
+    content: string;
+    attachmentIds?: string[];
+  }) =>
     (
       await api.post<Message>(
         `/conversations/${input.conversationId}/messages`,
-        { content: input.content },
+        { content: input.content, attachmentIds: input.attachmentIds },
       )
     ).data,
 };

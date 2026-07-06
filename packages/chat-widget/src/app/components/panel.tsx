@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "preact/hooks";
-import type { WidgetMessage } from "../types";
+import type { HelioWidgetConfig } from "../../shared/config";
+import type { WidgetMessage, WidgetSession } from "../types";
+import type { WidgetUpload } from "../widget";
 import { Composer } from "./composer";
 import { Thread } from "./thread";
 
@@ -13,6 +15,12 @@ interface PanelProps {
   loadingOlder: boolean;
   draft: string;
   sending: boolean;
+  uploads: WidgetUpload[];
+  onAddFiles: (files: FileList) => void;
+  onRemoveUpload: (localId: string) => void;
+  onRetryUpload: (localId: string) => void;
+  session: WidgetSession | null;
+  config: HelioWidgetConfig;
   onDraftChange: (value: string) => void;
   onSend: (content: string) => void;
   onRetryBoot: () => void;
@@ -145,12 +153,18 @@ export function Panel(props: PanelProps) {
             hidden={props.hidden}
             nextCursor={props.nextCursor}
             loadingOlder={props.loadingOlder}
+            session={props.session}
+            config={props.config}
             onLoadOlder={props.onLoadOlder}
             onRetryMessage={props.onRetryMessage}
           />
           <Composer
             draft={props.draft}
             sending={props.sending}
+            uploads={props.uploads}
+            onAddFiles={props.onAddFiles}
+            onRemoveUpload={props.onRemoveUpload}
+            onRetryUpload={props.onRetryUpload}
             onDraftChange={props.onDraftChange}
             onSend={props.onSend}
             onTypingStart={props.onTypingStart}

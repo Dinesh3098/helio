@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import type { Server } from 'socket.io';
-import { conversationRoom, SERVER_EVENTS } from './realtime.events';
+import {
+  conversationRoom,
+  SERVER_EVENTS,
+  workspaceRoom,
+} from './realtime.events';
 
 /**
  * Dependency-free bridge between business modules and the Socket.IO
@@ -18,11 +22,20 @@ export class RealtimeEmitterService {
     this.server = server;
   }
 
+  /**
+   * One emit targeting the union of the conversation room (visitors +
+   * agents viewing it) and the workspace room (all dashboards) —
+   * Socket.IO dedupes sockets that sit in both.
+   */
   emitToConversation(
     conversationId: string,
     event: (typeof SERVER_EVENTS)[keyof typeof SERVER_EVENTS],
     payload: unknown,
+    workspaceId?: string,
   ): void {
-    this.server?.to(conversationRoom(conversationId)).emit(event, payload);
+    if (!this.server) return;
+    let target = this.server.to(conversationRoom(conversationId));
+    if (workspaceId) target = target.to(workspaceRoom(workspaceId));
+    target.emit(event, payload);
   }
 }

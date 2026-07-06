@@ -19,8 +19,13 @@ export enum MessageType {
   SYSTEM = 'SYSTEM',
 }
 
-/** Metadata-only attachment reference — Helio never stores the bytes. */
+/**
+ * Attachment summary embedded in message metadata. `id` references an
+ * Attachment row (download via /attachments/:id/download); email-inbound
+ * entries may carry only metadata (no stored object, id absent).
+ */
 export interface MessageAttachment {
+  id?: string;
   filename: string;
   mimeType: string;
   size: number;
@@ -33,6 +38,8 @@ export interface MessageAttachment {
  * agnostic.
  */
 export interface MessageMetadata {
+  /** Files uploaded and sent with this (chat) message. */
+  attachments?: MessageAttachment[];
   email?: {
     subject: string | null;
     from: string;

@@ -6,6 +6,11 @@ export class ConversationRoomDto {
   conversationId: string;
 }
 
+export class WorkspaceRoomDto {
+  @IsUUID()
+  workspaceId: string;
+}
+
 /** Same content rules as the REST endpoint — one source of validation. */
 export class SendMessageWsDto extends CreateMessageDto {
   @IsUUID()

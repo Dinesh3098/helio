@@ -106,6 +106,7 @@ export class AutomationExecutor {
       conversationId,
       SERVER_EVENTS.messageCreated,
       message,
+      workspaceId,
     );
   }
 }
