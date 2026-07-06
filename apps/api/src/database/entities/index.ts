@@ -1,3 +1,4 @@
+import { AuditLog } from './audit-log.entity';
 import { AutomationExecution } from './automation-execution.entity';
 import { AutomationRule } from './automation-rule.entity';
 import { Contact } from './contact.entity';
@@ -15,6 +16,7 @@ import { UserSession } from './user-session.entity';
 import { Workspace } from './workspace.entity';
 import { WorkspaceMember } from './workspace-member.entity';
 
+export * from './audit-log.entity';
 export * from './automation-execution.entity';
 export * from './automation-rule.entity';
 export * from './contact.entity';
@@ -37,6 +39,7 @@ export * from './workspace-member.entity';
  * (autoLoadEntities is intentionally false).
  */
 export const entities = [
+  AuditLog,
   AutomationExecution,
   AutomationRule,
   Contact,

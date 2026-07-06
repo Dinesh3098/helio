@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HelpArticle, HelpCategory } from '../../database/entities';
+import { AuditService } from '../audit/audit.service';
 import {
   CategoryResponseDto,
   CreateCategoryDto,
@@ -19,6 +20,7 @@ export class KbCategoriesService {
     private readonly categoriesRepository: Repository<HelpCategory>,
     @InjectRepository(HelpArticle)
     private readonly articlesRepository: Repository<HelpArticle>,
+    private readonly auditService: AuditService,
   ) {}
 
   async list(workspaceId: string): Promise<CategoryResponseDto[]> {
@@ -85,6 +87,13 @@ export class KbCategoriesService {
         displayOrder: dto.displayOrder ?? 0,
       }),
     );
+    this.auditService.record({
+      workspaceId,
+      resourceType: 'kb_category',
+      resourceId: category.id,
+      action: 'kb.category_created',
+      metadata: { name: category.name },
+    });
     return { ...this.toBase(category), articlesCount: 0, publishedCount: 0 };
   }
 
@@ -110,6 +119,13 @@ export class KbCategoriesService {
       category.displayOrder = dto.displayOrder;
     }
     await this.categoriesRepository.save(category);
+    this.auditService.record({
+      workspaceId,
+      resourceType: 'kb_category',
+      resourceId: category.id,
+      action: 'kb.category_updated',
+      metadata: { name: category.name },
+    });
 
     const articlesCount = await this.articlesRepository.count({
       where: { workspaceId, categoryId },
@@ -131,7 +147,15 @@ export class KbCategoriesService {
         'Move or delete the articles in this category first',
       );
     }
+    const removed = { id: categoryId, name: category.name };
     await this.categoriesRepository.remove(category);
+    this.auditService.record({
+      workspaceId,
+      resourceType: 'kb_category',
+      resourceId: removed.id,
+      action: 'kb.category_deleted',
+      metadata: { name: removed.name },
+    });
   }
 
   async findInWorkspace(

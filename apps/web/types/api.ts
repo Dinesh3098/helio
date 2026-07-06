@@ -176,6 +176,42 @@ export interface PublicArticle extends PublicArticleSummary {
   workspaceName: string;
 }
 
+export interface AuditLogEntry {
+  id: string;
+  actorName: string | null;
+  resourceType: string;
+  resourceId: string | null;
+  action: string;
+  metadata: Record<string, unknown> | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
+export interface SystemStatus {
+  services: { name: string; status: string; latencyMs?: number }[];
+  sockets: { connections: number; users: number };
+  uptimeSeconds: number;
+  memory: { rssMb: number; heapUsedMb: number; heapTotalMb: number };
+  version: string;
+  environment: string;
+  node: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  action: string;
+  actorName: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface TimelineEntry {
+  kind: "message" | "event";
+  at: string;
+  message?: Message;
+  event?: TimelineEvent;
+}
+
 export type AutomationTrigger =
   | "CONVERSATION_CREATED"
   | "MESSAGE_RECEIVED"

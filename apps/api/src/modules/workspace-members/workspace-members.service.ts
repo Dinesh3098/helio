@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkspaceMember, WorkspaceMemberRole } from '../../database/entities';
+import { AuditService } from '../audit/audit.service';
 import { UsersService } from '../users/users.service';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { MemberResponseDto } from './dto/member-response.dto';
@@ -18,6 +19,7 @@ export class WorkspaceMembersService {
     @InjectRepository(WorkspaceMember)
     private readonly membersRepository: Repository<WorkspaceMember>,
     private readonly usersService: UsersService,
+    private readonly auditService: AuditService,
   ) {}
 
   /**
@@ -110,6 +112,13 @@ export class WorkspaceMembersService {
     );
 
     member.user = user;
+    this.auditService.record({
+      workspaceId: actor.workspaceId,
+      resourceType: 'member',
+      resourceId: member.id,
+      action: 'member.invited',
+      metadata: { email: user.email, role: dto.role },
+    });
     return this.toResponse(member);
   }
 
@@ -136,8 +145,16 @@ export class WorkspaceMembersService {
     }
 
     if (target.role !== dto.role) {
+      const previousRole = target.role;
       target.role = dto.role;
       await this.membersRepository.save(target);
+      this.auditService.record({
+        workspaceId: actor.workspaceId,
+        resourceType: 'member',
+        resourceId: target.id,
+        action: 'member.role_changed',
+        metadata: { email: target.user.email, from: previousRole, to: dto.role },
+      });
     }
     return this.toResponse(target);
   }
@@ -158,7 +175,15 @@ export class WorkspaceMembersService {
       throw new ForbiddenException('Admins can only remove agents');
     }
 
+    const removed = { id: target.id, email: target.user.email, role: target.role };
     await this.membersRepository.remove(target);
+    this.auditService.record({
+      workspaceId: actor.workspaceId,
+      resourceType: 'member',
+      resourceId: removed.id,
+      action: 'member.removed',
+      metadata: { email: removed.email, role: removed.role },
+    });
   }
 
   /**

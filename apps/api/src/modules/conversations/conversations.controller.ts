@@ -35,6 +35,7 @@ import {
   PaginatedConversationsDto,
 } from './dto/conversation-response.dto';
 import { QueryConversationsDto } from './dto/query-conversations.dto';
+import { TimelineResponseDto } from './dto/timeline.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
 
 const ALL_ROLES = [
@@ -78,6 +79,19 @@ export class ConversationsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ConversationDetailResponseDto> {
     return this.conversationsService.getDetail(membership.workspaceId, id);
+  }
+
+  @Get(':id/timeline')
+  @Roles(...ALL_ROLES)
+  @ApiOperation({
+    summary: 'Messages + audit events interleaved chronologically',
+  })
+  @ApiOkResponse({ type: TimelineResponseDto })
+  timeline(
+    @CurrentMembership() membership: WorkspaceMember,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<TimelineResponseDto> {
+    return this.conversationsService.timeline(membership.workspaceId, id);
   }
 
   @Patch(':id')
