@@ -88,6 +88,23 @@ export class StorageService {
     return this.maxFileSizeBytes;
   }
 
+  /**
+   * Health probe: can the active backend accept uploads right now?
+   * Never throws — an unavailable backend means uploads are degraded,
+   * not that the application is down.
+   */
+  async healthCheck(): Promise<{ available: boolean; reason?: string }> {
+    try {
+      await this.provider.checkAvailability();
+      return { available: true };
+    } catch (error) {
+      return {
+        available: false,
+        reason: error instanceof Error ? error.message : 'unknown',
+      };
+    }
+  }
+
   validate(originalFilename: string, mimeType: string, size: number): void {
     if (size > this.maxFileSizeBytes) {
       throw new PayloadTooLargeException(

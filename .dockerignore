@@ -1,0 +1,41 @@
+# Dependencies (reinstalled inside the image)
+node_modules
+**/node_modules
+
+# Build outputs (rebuilt inside the image)
+**/.next
+**/dist
+**/out
+.turbo
+**/.turbo
+coverage
+**/coverage
+*.tsbuildinfo
+
+# Environment files — secrets never enter the build context
+.env
+.env.*
+!.env.example
+!.env.production.example
+**/.env.local
+
+# Widget bundles copied into the dashboard (rebuilt during the web build)
+apps/web/public/widget.js
+apps/web/public/widget-app.js
+
+# Local upload storage
+storage
+apps/api/storage
+
+# VCS / tooling / docs
+.git
+.github
+.claude
+.vscode
+.idea
+docs
+PROJECT_CONTEXT.md
+**/.DS_Store
+
+# Deployed separately via wrangler (Cloudflare Email Worker)
+packages/email-worker/src

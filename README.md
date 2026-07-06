@@ -32,6 +32,17 @@ helio/
 
 All workspace packages are namespaced under `@helio/*`.
 
+## Deploy with Docker
+
+The whole platform (API, dashboard, widget, PostgreSQL, Redis) runs with one command:
+
+```sh
+cp .env.production.example .env   # set JWT_SECRET at minimum
+docker compose up --build
+```
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for the full guide (environment reference, health semantics, troubleshooting, production notes).
+
 ## Setup
 
 Requirements: Node.js >= 20, pnpm 9 (`corepack enable`).

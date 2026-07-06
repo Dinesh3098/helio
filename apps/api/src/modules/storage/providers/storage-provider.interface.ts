@@ -29,4 +29,10 @@ export interface StorageProvider {
   put(input: PutObjectInput): Promise<void>;
   getDownload(key: string, downloadFilename: string): Promise<ObjectDownload>;
   delete(key: string): Promise<void>;
+  /**
+   * Resolves when the backend can accept uploads; throws
+   * StorageProviderError otherwise. Consumed by the health endpoint —
+   * a failing backend degrades uploads without taking the app down.
+   */
+  checkAvailability(): Promise<void>;
 }
