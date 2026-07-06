@@ -33,4 +33,13 @@ export class ConnectionRegistryService {
   onlineUserIds(): string[] {
     return [...this.socketsByUser.keys()];
   }
+
+  /** Total open agent sockets (a user may hold several tabs). */
+  socketCount(): number {
+    let count = 0;
+    for (const sockets of this.socketsByUser.values()) {
+      count += sockets.size;
+    }
+    return count;
+  }
 }

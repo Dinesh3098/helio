@@ -18,6 +18,7 @@ import {
   Workspace,
 } from '../../database/entities';
 import { QueryMessagesDto } from '../messages/dto/query-messages.dto';
+import { MetricsService } from '../../metrics/metrics.service';
 import { MessagesService } from '../messages/messages.service';
 import {
   ClassificationResponseDto,
@@ -54,6 +55,7 @@ export class AiService {
     @InjectRepository(Workspace)
     private readonly workspacesRepository: Repository<Workspace>,
     private readonly messagesService: MessagesService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   // ---------- Feature 1: summary ----------
@@ -316,8 +318,11 @@ export class AiService {
     temperature?: number;
   }): Promise<string> {
     try {
-      return await this.provider.generate(request);
+      const result = await this.provider.generate(request);
+      this.metricsService.recordAi('success');
+      return result;
     } catch (error) {
+      this.metricsService.recordAi('error');
       if (error instanceof AiProviderError) {
         switch (error.reason) {
           case 'timeout':

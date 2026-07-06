@@ -1,8 +1,10 @@
 "use client";
 
 import {
+  Activity,
   BookOpen,
   Inbox,
+  ScrollText,
   Settings,
   Users,
   UsersRound,
@@ -10,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCurrentMember } from "@/features/workspace/hooks";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -22,9 +25,19 @@ const NAV_ITEMS = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+// Owner/admin-only pages, mirroring the backend RBAC.
+const ADMIN_NAV_ITEMS = [
+  { href: "/audit", label: "Audit Logs", icon: ScrollText },
+  { href: "/system", label: "System Health", icon: Activity },
+];
+
 export function Sidebar() {
   const pathname = usePathname();
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
+  const viewer = useCurrentMember();
+  const isManager = viewer?.role === "OWNER" || viewer?.role === "ADMIN";
+
+  const items = isManager ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS] : NAV_ITEMS;
 
   return (
     <aside
@@ -34,7 +47,7 @@ export function Sidebar() {
       )}
     >
       <nav aria-label="Main navigation" className="grid gap-1">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
             <Link

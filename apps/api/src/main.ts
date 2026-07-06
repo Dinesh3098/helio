@@ -3,9 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
+import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
+import { randomUUID } from 'node:crypto';
 import { AppModule } from './app.module';
+import { RequestContextService } from './common/request-context/request-context.service';
 import { AppConfig } from './config/configuration';
 
 async function bootstrap(): Promise<void> {
@@ -20,6 +23,31 @@ async function bootstrap(): Promise<void> {
   // Helmet's default CSP blocks Swagger UI's inline scripts in development.
   app.use(helmet({ contentSecurityPolicy: isDevelopment ? false : undefined }));
   app.use(compression());
+
+  // Request correlation: honor an incoming x-request-id (proxies/tests),
+  // otherwise mint one; echo it on the response and seed the ALS store
+  // that logging and auditing read for the rest of the request.
+  const requestContext = app.get(RequestContextService);
+  app.use(
+    (
+      req: Request & { id?: string },
+      res: Response,
+      next: NextFunction,
+    ) => {
+      const requestId =
+        (req.headers['x-request-id'] as string | undefined) ?? randomUUID();
+      req.id = requestId;
+      res.setHeader('x-request-id', requestId);
+      requestContext.run(
+        {
+          requestId,
+          ipAddress: req.ip ?? null,
+          userAgent: req.headers['user-agent'] ?? null,
+        },
+        next,
+      );
+    },
+  );
   app.enableCors({ origin: true, credentials: true });
 
   app.useGlobalPipes(

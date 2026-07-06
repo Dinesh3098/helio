@@ -4,7 +4,6 @@ import { ConversationsModule } from '../modules/conversations/conversations.modu
 import { MessagesModule } from '../modules/messages/messages.module';
 import { WidgetModule } from '../modules/widget/widget.module';
 import { WorkspaceMembersModule } from '../modules/workspace-members/workspace-members.module';
-import { ConnectionRegistryService } from './connection-registry.service';
 import { RealtimeEmitterModule } from './realtime-emitter.module';
 import { RealtimeGateway } from './realtime.gateway';
 
@@ -17,7 +16,7 @@ import { RealtimeGateway } from './realtime.gateway';
     WidgetModule,
     RealtimeEmitterModule,
   ],
-  providers: [RealtimeGateway, ConnectionRegistryService],
+  providers: [RealtimeGateway],
   // Exported so the email module can broadcast inbound/outbound messages.
   exports: [RealtimeGateway],
 })

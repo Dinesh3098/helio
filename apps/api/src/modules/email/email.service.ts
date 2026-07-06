@@ -24,6 +24,8 @@ import {
   type MessageMetadata,
 } from '../../database/entities';
 import { ConversationEventsService } from '../../events/conversation-events.service';
+import { MetricsService } from '../../metrics/metrics.service';
+import { AuditService } from '../audit/audit.service';
 import { RealtimeGateway } from '../../realtime/realtime.gateway';
 import { MessageResponseDto } from '../messages/dto/message-response.dto';
 import { MessagesService } from '../messages/messages.service';
@@ -61,6 +63,8 @@ export class EmailService {
     private readonly messagesService: MessagesService,
     private readonly realtimeGateway: RealtimeGateway,
     private readonly conversationEvents: ConversationEventsService,
+    private readonly auditService: AuditService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   // ---------- Accounts (owner/admin) ----------
@@ -96,6 +100,13 @@ export class EmailService {
         provider: this.provider.name,
       }),
     );
+    this.auditService.record({
+      workspaceId,
+      resourceType: 'email_account',
+      resourceId: account.id,
+      action: 'email_account.created',
+      metadata: { email: account.email },
+    });
     return this.toAccountResponse(account);
   }
 
@@ -127,12 +138,27 @@ export class EmailService {
     if (dto.status !== undefined) account.status = dto.status;
 
     await this.accountsRepository.save(account);
+    this.auditService.record({
+      workspaceId,
+      resourceType: 'email_account',
+      resourceId: account.id,
+      action: 'email_account.updated',
+      metadata: { email: account.email, fields: Object.keys(dto) },
+    });
     return this.toAccountResponse(account);
   }
 
   async removeAccount(workspaceId: string, accountId: string): Promise<void> {
     const account = await this.findAccountInWorkspace(workspaceId, accountId);
+    const removed = { id: accountId, email: account.email };
     await this.accountsRepository.remove(account);
+    this.auditService.record({
+      workspaceId,
+      resourceType: 'email_account',
+      resourceId: removed.id,
+      action: 'email_account.deleted',
+      metadata: { email: removed.email },
+    });
   }
 
   // ---------- Outbound: agent reply ----------
@@ -220,8 +246,10 @@ export class EmailService {
         },
       });
     } catch (error) {
+      this.metricsService.recordEmailOutbound('error');
       throw this.mapProviderError(error);
     }
+    this.metricsService.recordEmailOutbound('success');
 
     const metadata: MessageMetadata = {
       email: {
@@ -361,6 +389,7 @@ export class EmailService {
     );
 
     this.realtimeGateway.broadcastMessageCreated(message);
+    this.metricsService.recordEmailInbound();
 
     return {
       conversationId: thread.conversationId,

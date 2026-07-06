@@ -1,7 +1,8 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { Lock, MousePointerClick, Sparkles } from "lucide-react";
+import { History, Lock, MousePointerClick, Sparkles } from "lucide-react";
+import { useState } from "react";
 import Link from "next/link";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
@@ -14,6 +15,7 @@ import { useUiStore } from "@/stores/ui-store";
 import { useConversation } from "../hooks";
 import { ChannelIcon } from "./conversation-badges";
 import { ConversationControls } from "./conversation-controls";
+import { ConversationTimeline } from "./conversation-timeline";
 import { MessageComposer } from "./message-composer";
 import { MessageThread } from "./message-thread";
 
@@ -27,6 +29,7 @@ export function ConversationDetail({
   const conversation = useConversation(id);
   const aiPanelOpen = useUiStore((s) => s.aiPanelOpen);
   const toggleAiPanel = useUiStore((s) => s.toggleAiPanel);
+  const [showTimeline, setShowTimeline] = useState(false);
 
   if (id === null) {
     return (
@@ -90,6 +93,16 @@ export function ConversationDetail({
         <ChannelIcon channel={detail.channel} />
         <ConversationControls detail={detail} />
         <Button
+          variant={showTimeline ? "secondary" : "ghost"}
+          size="icon"
+          aria-label="Toggle activity timeline"
+          aria-pressed={showTimeline}
+          title="Activity timeline"
+          onClick={() => setShowTimeline((current) => !current)}
+        >
+          <History className="size-4" aria-hidden />
+        </Button>
+        <Button
           variant={aiPanelOpen ? "secondary" : "ghost"}
           size="sm"
           aria-label="Toggle AI assistant"
@@ -106,7 +119,11 @@ export function ConversationDetail({
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <MessageThread conversationId={detail.id} />
+          {showTimeline ? (
+            <ConversationTimeline conversationId={detail.id} />
+          ) : (
+            <MessageThread conversationId={detail.id} />
+          )}
 
           {typingNames.length > 0 && (
             <p

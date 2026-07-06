@@ -11,6 +11,7 @@ import {
   ContactResponseDto,
   PaginatedContactsDto,
 } from './dto/contact-response.dto';
+import { AuditService } from '../audit/audit.service';
 import { QueryContactsDto } from './dto/query-contacts.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 
@@ -21,6 +22,7 @@ export class ContactsService {
     private readonly contactsRepository: Repository<Contact>,
     @InjectRepository(Conversation)
     private readonly conversationsRepository: Repository<Conversation>,
+    private readonly auditService: AuditService,
   ) {}
 
   async list(
@@ -106,6 +108,13 @@ export class ContactsService {
     }
 
     const saved = await this.contactsRepository.save(contact);
+    this.auditService.record({
+      workspaceId,
+      resourceType: 'contact',
+      resourceId: contactId,
+      action: 'contact.updated',
+      metadata: { fields: Object.keys(dto) },
+    });
     return this.toResponse(saved);
   }
 

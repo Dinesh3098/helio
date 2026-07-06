@@ -21,6 +21,11 @@ export const queryKeys = {
     ["ai", conversationId, "classification"] as const,
   aiKbSuggestions: (conversationId: string) =>
     ["ai", conversationId, "kb"] as const,
+  auditLogs: (params: { resourceType?: string; page: number }) =>
+    ["audit", "logs", params] as const,
+  systemStatus: ["admin", "system"] as const,
+  timeline: (conversationId: string) =>
+    ["conversations", conversationId, "timeline"] as const,
   automationRules: ["automation", "rules"] as const,
   automationHistory: (params: { ruleId?: string; page: number }) =>
     ["automation", "history", params] as const,

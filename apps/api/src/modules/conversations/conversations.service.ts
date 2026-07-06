@@ -15,6 +15,13 @@ import {
   WorkspaceMember,
   WorkspaceMemberRole,
 } from '../../database/entities';
+import { AuditService } from '../audit/audit.service';
+import { MessagesService } from '../messages/messages.service';
+import { QueryMessagesDto } from '../messages/dto/query-messages.dto';
+import {
+  TimelineEntryDto,
+  TimelineResponseDto,
+} from './dto/timeline.dto';
 import { ConversationEventsService } from '../../events/conversation-events.service';
 import { RealtimeEmitterService } from '../../realtime/realtime-emitter.service';
 import { SERVER_EVENTS } from '../../realtime/realtime.events';
@@ -47,6 +54,8 @@ export class ConversationsService {
     private readonly dataSource: DataSource,
     private readonly realtimeEmitter: RealtimeEmitterService,
     private readonly conversationEvents: ConversationEventsService,
+    private readonly auditService: AuditService,
+    private readonly messagesService: MessagesService,
   ) {}
 
   async list(
@@ -154,6 +163,7 @@ export class ConversationsService {
     );
 
     const previousStatus = conversation.status;
+    const previousPriority = conversation.priority;
     let changed = false;
     if (dto.status !== undefined && dto.status !== conversation.status) {
       conversation.status = dto.status;
@@ -164,6 +174,24 @@ export class ConversationsService {
       changed = true;
     }
     if (changed) {
+      if (conversation.status !== previousStatus) {
+        this.auditService.record({
+          workspaceId,
+          resourceType: 'conversation',
+          resourceId: conversationId,
+          action: 'conversation.status_changed',
+          metadata: { from: previousStatus, to: conversation.status },
+        });
+      }
+      if (conversation.priority !== previousPriority) {
+        this.auditService.record({
+          workspaceId,
+          resourceType: 'conversation',
+          resourceId: conversationId,
+          action: 'conversation.priority_changed',
+          metadata: { from: previousPriority, to: conversation.priority },
+        });
+      }
       await this.conversationsRepository.save(conversation);
       await this.broadcastUpdated(workspaceId, conversationId);
       if (conversation.status !== previousStatus) {
@@ -251,6 +279,15 @@ export class ConversationsService {
         await manager.getRepository(Conversation).save(conversation);
       });
       await this.broadcastUpdated(actor.workspaceId, conversationId);
+      this.auditService.record({
+        workspaceId: actor.workspaceId,
+        resourceType: 'conversation',
+        resourceId: conversationId,
+        action: targetUserId
+          ? 'conversation.assigned'
+          : 'conversation.unassigned',
+        metadata: targetUserId ? { assignedToUserId: targetUserId } : {},
+      });
     }
 
     return this.toResponse(conversation);
@@ -285,6 +322,67 @@ export class ConversationsService {
       await manager.getRepository(Conversation).save(conversation);
     });
     await this.broadcastUpdated(workspaceId, conversationId);
+    this.auditService.record({
+      workspaceId,
+      actorUserId: null,
+      resourceType: 'conversation',
+      resourceId: conversationId,
+      action: userId ? 'conversation.assigned' : 'conversation.unassigned',
+      metadata: {
+        source: 'automation',
+        ...(userId ? { assignedToUserId: userId } : {}),
+      },
+    });
+  }
+
+  /**
+   * Unified activity timeline: the newest messages page interleaved with
+   * this conversation's audit events, chronologically. Both halves are
+   * already workspace-scoped by their sources.
+   */
+  async timeline(
+    workspaceId: string,
+    conversationId: string,
+  ): Promise<TimelineResponseDto> {
+    await this.findWithContact(workspaceId, conversationId);
+
+    const [messagesPage, events] = await Promise.all([
+      this.messagesService.listForConversation(
+        workspaceId,
+        conversationId,
+        Object.assign(new QueryMessagesDto(), { limit: 100 }),
+      ),
+      this.auditService.listForResource(
+        workspaceId,
+        'conversation',
+        conversationId,
+      ),
+    ]);
+
+    const entries: TimelineEntryDto[] = [
+      ...messagesPage.data.map(
+        (message): TimelineEntryDto => ({
+          kind: 'message' as const,
+          at: message.createdAt,
+          message,
+        }),
+      ),
+      ...events.map(
+        (event): TimelineEntryDto => ({
+          kind: 'event' as const,
+          at: event.createdAt,
+          event: {
+            id: event.id,
+            action: event.action,
+            actorName: event.actorUser?.name ?? null,
+            metadata: event.metadata,
+            createdAt: event.createdAt,
+          },
+        }),
+      ),
+    ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+
+    return { entries };
   }
 
   /** Tag add/remove for the automation engine; broadcasts on change. */
@@ -308,6 +406,14 @@ export class ConversationsService {
     conversation.tags = [...tags];
     await this.conversationsRepository.save(conversation);
     await this.broadcastUpdated(workspaceId, conversationId);
+    this.auditService.record({
+      workspaceId,
+      actorUserId: null,
+      resourceType: 'conversation',
+      resourceId: conversationId,
+      action: remove ? 'conversation.tag_removed' : 'conversation.tag_added',
+      metadata: { tag, source: 'automation' },
+    });
   }
 
   /**

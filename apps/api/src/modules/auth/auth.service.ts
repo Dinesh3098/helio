@@ -13,6 +13,7 @@ import {
   WorkspaceMemberRole,
 } from '../../database/entities';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { AuditService } from '../audit/audit.service';
 import { SessionsService } from '../sessions/sessions.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -45,6 +46,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
     private readonly sessionsService: SessionsService,
+    private readonly auditService: AuditService,
   ) {}
 
   /**
@@ -106,6 +108,14 @@ export class AuthService {
     }
 
     const accessToken = await this.signAccessToken(user.id, user.email);
+    this.auditService.record({
+      workspaceId: workspace.id,
+      actorUserId: user.id,
+      resourceType: 'auth',
+      resourceId: user.id,
+      action: 'auth.signup',
+      metadata: { email: user.email, workspaceName: workspace.name },
+    });
     return {
       user: this.toPublicUser(user),
       workspace: { id: workspace.id, name: workspace.name },
@@ -131,6 +141,14 @@ export class AuthService {
     await this.sessionsService.createSession(user.id, refreshToken);
     const accessToken = await this.signAccessToken(user.id, user.email);
 
+    this.auditService.record({
+      workspaceId: null,
+      actorUserId: user.id,
+      resourceType: 'auth',
+      resourceId: user.id,
+      action: 'auth.login',
+      metadata: { email: user.email },
+    });
     return { user: this.toPublicUser(user), accessToken, refreshToken };
   }
 
@@ -153,7 +171,20 @@ export class AuthService {
   }
 
   async logout(dto: RefreshTokenDto): Promise<void> {
+    // Resolve the session before revoking so the audit row has an actor.
+    const session = await this.sessionsService.findValidByToken(
+      dto.refreshToken,
+    );
     await this.sessionsService.revokeByToken(dto.refreshToken);
+    if (session) {
+      this.auditService.record({
+        workspaceId: null,
+        actorUserId: session.userId,
+        resourceType: 'auth',
+        resourceId: session.userId,
+        action: 'auth.logout',
+      });
+    }
   }
 
   /**

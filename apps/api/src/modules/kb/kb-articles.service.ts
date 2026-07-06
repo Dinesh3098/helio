@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { HelpArticle } from '../../database/entities';
+import { AuditService } from '../audit/audit.service';
 import {
   ArticleResponseDto,
   ArticleSummaryDto,
@@ -19,6 +20,7 @@ export class KbArticlesService {
     @InjectRepository(HelpArticle)
     private readonly articlesRepository: Repository<HelpArticle>,
     private readonly categoriesService: KbCategoriesService,
+    private readonly auditService: AuditService,
   ) {}
 
   async list(
@@ -94,6 +96,13 @@ export class KbArticlesService {
         updatedByUserId: author.id,
       }),
     );
+    this.auditService.record({
+      workspaceId,
+      resourceType: 'kb_article',
+      resourceId: article.id,
+      action: 'kb.article_created',
+      metadata: { title: article.title, slug: article.slug },
+    });
     return this.getById(workspaceId, article.id);
   }
 
@@ -131,6 +140,18 @@ export class KbArticlesService {
     article.updatedByUserId = editor.id;
 
     await this.articlesRepository.save(article);
+    this.auditService.record({
+      workspaceId,
+      resourceType: 'kb_article',
+      resourceId: article.id,
+      action:
+        dto.isPublished === undefined
+          ? 'kb.article_updated'
+          : dto.isPublished
+            ? 'kb.article_published'
+            : 'kb.article_unpublished',
+      metadata: { title: article.title, fields: Object.keys(dto) },
+    });
     return this.getById(workspaceId, article.id);
   }
 
@@ -141,7 +162,15 @@ export class KbArticlesService {
     if (!article) {
       throw new NotFoundException('Article not found');
     }
+    const removed = { id: articleId, title: article.title };
     await this.articlesRepository.remove(article);
+    this.auditService.record({
+      workspaceId,
+      resourceType: 'kb_article',
+      resourceId: removed.id,
+      action: 'kb.article_deleted',
+      metadata: { title: removed.title },
+    });
   }
 
   /**

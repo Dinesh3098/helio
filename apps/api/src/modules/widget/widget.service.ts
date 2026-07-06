@@ -10,6 +10,8 @@ import {
   Workspace,
 } from '../../database/entities';
 import { ConversationEventsService } from '../../events/conversation-events.service';
+import { MetricsService } from '../../metrics/metrics.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateWidgetSessionDto } from './dto/create-widget-session.dto';
 import { WidgetSessionResponseDto } from './dto/widget-session-response.dto';
 import { WidgetAuthService } from './widget-auth.service';
@@ -36,6 +38,8 @@ export class WidgetService {
     private readonly conversationsRepository: Repository<Conversation>,
     private readonly widgetAuthService: WidgetAuthService,
     private readonly conversationEvents: ConversationEventsService,
+    private readonly auditService: AuditService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   async createSession(
@@ -48,6 +52,7 @@ export class WidgetService {
       throw new NotFoundException('Workspace not found');
     }
 
+    this.metricsService.recordWidgetSession();
     const contact = await this.findOrCreateContact(
       dto.workspaceId,
       dto.visitorId,
@@ -132,6 +137,15 @@ export class WidgetService {
       trigger: AutomationTrigger.CONVERSATION_CREATED,
       workspaceId: contact.workspaceId,
       conversationId: conversation.id,
+    });
+    // System event: no authenticated actor behind widget traffic.
+    this.auditService.record({
+      workspaceId: contact.workspaceId,
+      actorUserId: null,
+      resourceType: 'conversation',
+      resourceId: conversation.id,
+      action: 'conversation.created',
+      metadata: { source: 'widget', contactId: contact.id },
     });
     return conversation;
   }
