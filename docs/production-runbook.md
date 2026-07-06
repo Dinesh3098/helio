@@ -53,7 +53,17 @@ Tools used: **Docker + Docker Compose** (the stack), **cloudflared** (tunnel + D
 
 ## 3. Commands you need
 
-All from the repo root. The env file `--env-file .env.production.local` and project `-p helio-prod` matter — without them compose targets the wrong stack.
+**Site down for any reason? One command brings everything back:**
+
+```bash
+./deploy/prod-up.sh
+```
+
+Idempotent — it starts Docker if quit, brings up the stack (health-gated),
+restarts the demo Caddy, kicks the tunnel, re-arms the sleep blocker, and
+probes all three public URLs. Covers Docker-quit, laptop-sleep, and reboot.
+
+All other commands run from the repo root. The env file `--env-file .env.production.local` and project `-p helio-prod` matter — without them compose targets the wrong stack.
 
 ```bash
 # Status / logs
