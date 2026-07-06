@@ -14,14 +14,23 @@ import {
   WorkspaceMember,
   WorkspaceMemberRole,
 } from '../../database/entities';
+import { RealtimeEmitterService } from '../../realtime/realtime-emitter.service';
+import { SERVER_EVENTS } from '../../realtime/realtime.events';
 import { WorkspaceMembersService } from '../workspace-members/workspace-members.service';
 import { AssignConversationDto } from './dto/assign-conversation.dto';
 import {
+  ConversationAssigneeDto,
   ConversationDetailResponseDto,
   ConversationResponseDto,
   PaginatedConversationsDto,
 } from './dto/conversation-response.dto';
 import { QueryConversationsDto } from './dto/query-conversations.dto';
+import { UpdateConversationDto } from './dto/update-conversation.dto';
+
+/** Broadcast shape: the list row plus the resolved assignee for details. */
+export type ConversationUpdatedPayload = ConversationResponseDto & {
+  assignee: ConversationAssigneeDto | null;
+};
 
 @Injectable()
 export class ConversationsService {
@@ -34,6 +43,7 @@ export class ConversationsService {
     private readonly messagesRepository: Repository<Message>,
     private readonly workspaceMembersService: WorkspaceMembersService,
     private readonly dataSource: DataSource,
+    private readonly realtimeEmitter: RealtimeEmitterService,
   ) {}
 
   async list(
@@ -129,20 +139,39 @@ export class ConversationsService {
     };
   }
 
-  async setStatus(
+  /** Status and/or priority in one PATCH; broadcasts on actual change. */
+  async update(
     workspaceId: string,
     conversationId: string,
-    status: ConversationStatus,
+    dto: UpdateConversationDto,
   ): Promise<ConversationResponseDto> {
     const conversation = await this.findWithContact(
       workspaceId,
       conversationId,
     );
-    if (conversation.status !== status) {
-      conversation.status = status;
+
+    let changed = false;
+    if (dto.status !== undefined && dto.status !== conversation.status) {
+      conversation.status = dto.status;
+      changed = true;
+    }
+    if (dto.priority !== undefined && dto.priority !== conversation.priority) {
+      conversation.priority = dto.priority;
+      changed = true;
+    }
+    if (changed) {
       await this.conversationsRepository.save(conversation);
+      await this.broadcastUpdated(workspaceId, conversationId);
     }
     return this.toResponse(conversation);
+  }
+
+  async setStatus(
+    workspaceId: string,
+    conversationId: string,
+    status: ConversationStatus,
+  ): Promise<ConversationResponseDto> {
+    return this.update(workspaceId, conversationId, { status });
   }
 
   /**
@@ -155,41 +184,90 @@ export class ConversationsService {
     conversationId: string,
     dto: AssignConversationDto,
   ): Promise<ConversationResponseDto> {
-    const member = await this.workspaceMembersService.findByIdInWorkspace(
-      actor.workspaceId,
-      dto.workspaceMemberId,
-    );
-    if (!member) {
-      throw new NotFoundException('Member not found in this workspace');
-    }
-    if (
-      actor.role === WorkspaceMemberRole.AGENT &&
-      member.userId !== actor.userId
-    ) {
-      throw new ForbiddenException(
-        'Agents can only assign conversations to themselves',
-      );
-    }
-
     const conversation = await this.findWithContact(
       actor.workspaceId,
       conversationId,
     );
 
-    await this.dataSource.transaction(async (manager) => {
-      await manager.getRepository(ConversationAssignment).save(
-        manager.getRepository(ConversationAssignment).create({
-          conversationId: conversation.id,
-          assignedToUserId: member.userId,
-          assignedByUserId: actor.userId,
-        }),
+    let targetUserId: string | null = null;
+    if (dto.workspaceMemberId) {
+      const member = await this.workspaceMembersService.findByIdInWorkspace(
+        actor.workspaceId,
+        dto.workspaceMemberId,
       );
-      conversation.assignedToUserId = member.userId;
-      conversation.assignedAt = new Date();
-      await manager.getRepository(Conversation).save(conversation);
-    });
+      if (!member) {
+        throw new NotFoundException('Member not found in this workspace');
+      }
+      if (
+        actor.role === WorkspaceMemberRole.AGENT &&
+        member.userId !== actor.userId
+      ) {
+        throw new ForbiddenException(
+          'Agents can only assign conversations to themselves',
+        );
+      }
+      targetUserId = member.userId;
+    } else if (
+      // Unassign: agents may only release conversations they hold.
+      actor.role === WorkspaceMemberRole.AGENT &&
+      conversation.assignedToUserId !== actor.userId
+    ) {
+      throw new ForbiddenException(
+        'Agents can only unassign conversations assigned to themselves',
+      );
+    }
+
+    if (conversation.assignedToUserId !== targetUserId) {
+      await this.dataSource.transaction(async (manager) => {
+        // History rows record unassignments too (assignedToUserId null).
+        await manager.getRepository(ConversationAssignment).save(
+          manager.getRepository(ConversationAssignment).create({
+            conversationId: conversation.id,
+            assignedToUserId: targetUserId,
+            assignedByUserId: actor.userId,
+          }),
+        );
+        conversation.assignedToUserId = targetUserId;
+        conversation.assignedAt = targetUserId ? new Date() : null;
+        await manager.getRepository(Conversation).save(conversation);
+      });
+      await this.broadcastUpdated(actor.workspaceId, conversationId);
+    }
 
     return this.toResponse(conversation);
+  }
+
+  /**
+   * Fans the fresh conversation (with resolved assignee) into its room so
+   * every dashboard viewing it updates without a refetch. Reloads once —
+   * management actions are rare enough that one extra query beats
+   * threading partial state through every call site.
+   */
+  private async broadcastUpdated(
+    workspaceId: string,
+    conversationId: string,
+  ): Promise<void> {
+    const conversation = await this.conversationsRepository.findOne({
+      where: { id: conversationId, workspaceId },
+      relations: { contact: true, assignedToUser: true },
+    });
+    if (!conversation) return;
+
+    const payload: ConversationUpdatedPayload = {
+      ...this.toResponse(conversation),
+      assignee: conversation.assignedToUser
+        ? {
+            userId: conversation.assignedToUser.id,
+            name: conversation.assignedToUser.name,
+            email: conversation.assignedToUser.email,
+          }
+        : null,
+    };
+    this.realtimeEmitter.emitToConversation(
+      conversationId,
+      SERVER_EVENTS.conversationUpdated,
+      payload,
+    );
   }
 
   async listForContact(

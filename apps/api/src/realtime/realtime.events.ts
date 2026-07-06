@@ -16,6 +16,8 @@ export const SERVER_EVENTS = {
   conversationJoined: 'conversationJoined',
   conversationLeft: 'conversationLeft',
   messageCreated: 'messageCreated',
+  /** Status / priority / assignee changed — payload is the conversation. */
+  conversationUpdated: 'conversationUpdated',
   typingStarted: 'typingStarted',
   typingStopped: 'typingStopped',
   messageError: 'messageError',

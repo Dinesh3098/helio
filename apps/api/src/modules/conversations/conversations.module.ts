@@ -6,6 +6,7 @@ import {
   ConversationSummary,
   Message,
 } from '../../database/entities';
+import { RealtimeEmitterModule } from '../../realtime/realtime-emitter.module';
 import { WorkspaceMembersModule } from '../workspace-members/workspace-members.module';
 import { ConversationsController } from './conversations.controller';
 import { ConversationsService } from './conversations.service';
@@ -19,6 +20,7 @@ import { ConversationsService } from './conversations.service';
       Message,
     ]),
     WorkspaceMembersModule,
+    RealtimeEmitterModule,
   ],
   controllers: [ConversationsController],
   providers: [ConversationsService],

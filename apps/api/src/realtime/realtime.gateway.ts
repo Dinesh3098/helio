@@ -20,6 +20,7 @@ import type { VisitorPrincipal } from '../modules/widget/interfaces/visitor-prin
 import { WidgetAuthService } from '../modules/widget/widget-auth.service';
 import { WorkspaceMembersService } from '../modules/workspace-members/workspace-members.service';
 import { ConnectionRegistryService } from './connection-registry.service';
+import { RealtimeEmitterService } from './realtime-emitter.service';
 import { ConversationRoomDto, SendMessageWsDto } from './dto/ws-payloads.dto';
 import {
   CLIENT_EVENTS,
@@ -85,6 +86,7 @@ export class RealtimeGateway
     private readonly workspaceMembersService: WorkspaceMembersService,
     private readonly messagesService: MessagesService,
     private readonly connectionRegistry: ConnectionRegistryService,
+    private readonly realtimeEmitter: RealtimeEmitterService,
   ) {}
 
   /**
@@ -99,6 +101,8 @@ export class RealtimeGateway
    * Widget visitors: `auth: { visitorToken }`.
    */
   afterInit(server: Server): void {
+    // Business modules broadcast through the emitter, never the gateway.
+    this.realtimeEmitter.setServer(server);
     server.use((socket: GatewaySocket, next) => {
       void this.authenticate(socket).then((error) => next(error));
     });
