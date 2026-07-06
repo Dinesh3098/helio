@@ -2,6 +2,7 @@ import { api } from "@/lib/api/client";
 import type {
   Conversation,
   ConversationDetail,
+  ConversationPriority,
   ConversationStatus,
   Message,
   MessagesPage,
@@ -20,6 +21,19 @@ export const conversationsApi = {
 
   get: async (id: string) =>
     (await api.get<ConversationDetail>(`/conversations/${id}`)).data,
+
+  update: async (
+    id: string,
+    input: { status?: ConversationStatus; priority?: ConversationPriority },
+  ) => (await api.patch<Conversation>(`/conversations/${id}`, input)).data,
+
+  /** memberId null unassigns. */
+  assign: async (id: string, workspaceMemberId: string | null) =>
+    (
+      await api.post<Conversation>(`/conversations/${id}/assign`, {
+        workspaceMemberId,
+      })
+    ).data,
 };
 
 export const emailApi = {

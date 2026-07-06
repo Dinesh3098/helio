@@ -10,10 +10,12 @@ import {
   type TypingEvent,
 } from "@/lib/realtime/socket";
 import { useUiStore } from "@/stores/ui-store";
-import type { Message } from "@/types/api";
+import type { Conversation, Message } from "@/types/api";
 import {
   appendMessageToCache,
+  applyConversationUpdate,
   applyMessageToConversationCaches,
+  type ConversationAssignee,
 } from "./cache";
 
 /**
@@ -84,13 +86,23 @@ export function useConversationRoom(conversationId: string | null): {
       removeTyping(event.userId);
     };
 
+    // Another agent changed status/priority/assignee — fold the fresh
+    // conversation into caches so this dashboard reflects it instantly.
+    const onConversationUpdated = (
+      payload: Conversation & { assignee: ConversationAssignee | null },
+    ) => {
+      applyConversationUpdate(queryClient, payload, payload.assignee);
+    };
+
     socket.on(REALTIME.messageCreated, onMessageCreated);
+    socket.on(REALTIME.conversationUpdated, onConversationUpdated);
     socket.on(REALTIME.typingStarted, onTypingStarted);
     socket.on(REALTIME.typingStopped, onTypingStopped);
 
     return () => {
       socket.off("connect", join);
       socket.off(REALTIME.messageCreated, onMessageCreated);
+      socket.off(REALTIME.conversationUpdated, onConversationUpdated);
       socket.off(REALTIME.typingStarted, onTypingStarted);
       socket.off(REALTIME.typingStopped, onTypingStopped);
       if (socket.connected) {

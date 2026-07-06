@@ -1,4 +1,8 @@
-import type { InfiniteData, QueryClient } from "@tanstack/react-query";
+import type {
+  InfiniteData,
+  Query,
+  QueryClient,
+} from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 import type {
   Conversation,
@@ -11,6 +15,28 @@ import type {
 type MessagesData = InfiniteData<MessagesPage, unknown>;
 
 const PREVIEW_LENGTH = 140;
+
+/** Matches the paginated list queries: ["conversations", {status, page}]. */
+function isConversationListQuery(query: Query): boolean {
+  return (
+    query.queryKey[0] === "conversations" &&
+    query.queryKey.length === 2 &&
+    typeof query.queryKey[1] === "object" &&
+    query.queryKey[1] !== null
+  );
+}
+
+/**
+ * Status-filtered lists change MEMBERSHIP when a conversation's status
+ * changes — an in-place row merge cannot move a conversation from the
+ * Open tab's cached page into the Snoozed tab's. Invalidating refetches
+ * the visible tab in the background and marks the hidden tabs stale, so
+ * switching tabs refetches immediately instead of serving a cached page
+ * for the rest of its staleTime.
+ */
+export function invalidateConversationLists(queryClient: QueryClient): void {
+  void queryClient.invalidateQueries({ predicate: isConversationListQuery });
+}
 
 /**
  * Inserts a message into the thread cache (newest page), deduplicating by
@@ -49,11 +75,64 @@ export function appendMessageToCache(
   return appended;
 }
 
+export interface ConversationAssignee {
+  userId: string;
+  name: string;
+  email: string;
+}
+
+/**
+ * Folds a management change (status/priority/assignee) into the caches:
+ * the detail is merged in place (the open header updates instantly), and
+ * the list queries are invalidated so every tab's membership is correct.
+ * `assignee` undefined = leave it untouched (status/priority PATCHes
+ * don't know it); null/value = overwrite.
+ */
+export function applyConversationUpdate(
+  queryClient: QueryClient,
+  updated: Conversation,
+  assignee?: ConversationAssignee | null,
+): void {
+  const merge = <T extends Conversation>(row: T): T =>
+    row.id === updated.id
+      ? {
+          ...row,
+          status: updated.status,
+          priority: updated.priority,
+          assignedToUserId: updated.assignedToUserId,
+          updatedAt: updated.updatedAt,
+        }
+      : row;
+
+  // In-place merge keeps whatever is on screen coherent while the
+  // refetch triggered below is in flight.
+  queryClient.setQueriesData<Paginated<Conversation>>(
+    { predicate: isConversationListQuery },
+    (page) => (page ? { ...page, data: page.data.map(merge) } : page),
+  );
+
+  queryClient.setQueryData<ConversationDetail>(
+    queryKeys.conversation(updated.id),
+    (detail) =>
+      detail
+        ? {
+            ...merge(detail),
+            ...(assignee !== undefined ? { assignee } : {}),
+          }
+        : detail,
+  );
+
+  // Management actions are rare — a list refetch per change is cheap and
+  // the only way to move rows between status-filtered tabs.
+  invalidateConversationLists(queryClient);
+}
+
 /**
  * Mirrors the backend's side effects onto cached conversation rows —
  * preview, activity timestamps, SNOOZED→OPEN — via setQueryData, without
- * refetching. Ordering/filter drift in status-filtered lists corrects on
- * the next natural refetch.
+ * refetching. When the snooze flip actually happens, list membership
+ * changed, so the lists are additionally invalidated (only in that case —
+ * plain messages are frequent and must stay refetch-free).
  */
 export function applyMessageToConversationCaches(
   queryClient: QueryClient,
@@ -64,26 +143,23 @@ export function applyMessageToConversationCaches(
     .trim()
     .slice(0, PREVIEW_LENGTH);
 
-  const bump = <T extends Conversation>(conversation: T): T =>
-    conversation.id === message.conversationId
-      ? {
-          ...conversation,
-          lastMessagePreview: preview,
-          lastMessageAt: message.createdAt,
-          updatedAt: message.createdAt,
-          status:
-            conversation.status === "SNOOZED" ? "OPEN" : conversation.status,
-        }
-      : conversation;
+  let statusFlipped = false;
+
+  const bump = <T extends Conversation>(conversation: T): T => {
+    if (conversation.id !== message.conversationId) return conversation;
+    if (conversation.status === "SNOOZED") statusFlipped = true;
+    return {
+      ...conversation,
+      lastMessagePreview: preview,
+      lastMessageAt: message.createdAt,
+      updatedAt: message.createdAt,
+      status:
+        conversation.status === "SNOOZED" ? "OPEN" : conversation.status,
+    };
+  };
 
   queryClient.setQueriesData<Paginated<Conversation>>(
-    {
-      predicate: (query) =>
-        query.queryKey[0] === "conversations" &&
-        query.queryKey.length === 2 &&
-        typeof query.queryKey[1] === "object" &&
-        query.queryKey[1] !== null,
-    },
+    { predicate: isConversationListQuery },
     (page) => (page ? { ...page, data: page.data.map(bump) } : page),
   );
 
@@ -91,4 +167,8 @@ export function applyMessageToConversationCaches(
     queryKeys.conversation(message.conversationId),
     (detail) => (detail ? bump(detail) : detail),
   );
+
+  if (statusFlipped) {
+    invalidateConversationLists(queryClient);
+  }
 }

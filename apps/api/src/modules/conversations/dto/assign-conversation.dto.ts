@@ -1,8 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsUUID } from 'class-validator';
 
 export class AssignConversationDto {
-  @ApiProperty({ format: 'uuid', description: 'Workspace member to assign' })
+  @ApiPropertyOptional({
+    format: 'uuid',
+    nullable: true,
+    description: 'Workspace member to assign; omit or null to unassign',
+  })
+  @IsOptional()
   @IsUUID()
-  workspaceMemberId: string;
+  workspaceMemberId?: string | null;
 }

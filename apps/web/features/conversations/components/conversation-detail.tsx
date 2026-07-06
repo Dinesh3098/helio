@@ -12,7 +12,8 @@ import { AiPanel } from "@/features/ai/components/ai-panel";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 import { useConversation } from "../hooks";
-import { ChannelIcon, StatusBadge } from "./conversation-badges";
+import { ChannelIcon } from "./conversation-badges";
+import { ConversationControls } from "./conversation-controls";
 import { MessageComposer } from "./message-composer";
 import { MessageThread } from "./message-thread";
 
@@ -80,14 +81,6 @@ export function ConversationDetail({
                 {" · "}
               </>
             )}
-            {detail.assignee
-              ? `Assigned to ${detail.assignee.name}`
-              : "Unassigned"}
-            {" · "}
-            <span className="capitalize">
-              {detail.priority.toLowerCase()} priority
-            </span>
-            {" · "}
             {formatDistanceToNow(
               new Date(detail.lastMessageAt ?? detail.updatedAt),
               { addSuffix: true },
@@ -95,7 +88,7 @@ export function ConversationDetail({
           </p>
         </div>
         <ChannelIcon channel={detail.channel} />
-        <StatusBadge status={detail.status} />
+        <ConversationControls detail={detail} />
         <Button
           variant={aiPanelOpen ? "secondary" : "ghost"}
           size="sm"

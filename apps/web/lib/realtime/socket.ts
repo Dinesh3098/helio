@@ -13,6 +13,7 @@ export const REALTIME = {
   conversationJoined: "conversationJoined",
   conversationLeft: "conversationLeft",
   messageCreated: "messageCreated",
+  conversationUpdated: "conversationUpdated",
   typingStarted: "typingStarted",
   typingStopped: "typingStopped",
   messageError: "messageError",

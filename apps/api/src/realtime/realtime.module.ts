@@ -5,6 +5,7 @@ import { MessagesModule } from '../modules/messages/messages.module';
 import { WidgetModule } from '../modules/widget/widget.module';
 import { WorkspaceMembersModule } from '../modules/workspace-members/workspace-members.module';
 import { ConnectionRegistryService } from './connection-registry.service';
+import { RealtimeEmitterModule } from './realtime-emitter.module';
 import { RealtimeGateway } from './realtime.gateway';
 
 @Module({
@@ -14,6 +15,7 @@ import { RealtimeGateway } from './realtime.gateway';
     MessagesModule,
     WorkspaceMembersModule,
     WidgetModule,
+    RealtimeEmitterModule,
   ],
   providers: [RealtimeGateway, ConnectionRegistryService],
   // Exported so the email module can broadcast inbound/outbound messages.

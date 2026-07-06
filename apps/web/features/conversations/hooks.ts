@@ -18,8 +18,13 @@ import {
   REALTIME,
   type SendMessageAck,
 } from "@/lib/realtime/socket";
-import type { Message, MessagesPage } from "@/types/api";
-import type { ConversationChannel } from "@/types/api";
+import type {
+  ConversationChannel,
+  ConversationPriority,
+  ConversationStatus,
+  Message,
+  MessagesPage,
+} from "@/types/api";
 import {
   conversationsApi,
   emailApi,
@@ -28,7 +33,9 @@ import {
 } from "./api";
 import {
   appendMessageToCache,
+  applyConversationUpdate,
   applyMessageToConversationCaches,
+  type ConversationAssignee,
 } from "./cache";
 
 export function useConversations(params: ConversationListParams) {
@@ -44,6 +51,38 @@ export function useConversation(id: string | null) {
     queryKey: queryKeys.conversation(id ?? ""),
     queryFn: () => conversationsApi.get(id as string),
     enabled: id !== null,
+  });
+}
+
+/** Status/priority PATCH; caches updated in place, no refetch. */
+export function useUpdateConversation(conversationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      status?: ConversationStatus;
+      priority?: ConversationPriority;
+    }) => conversationsApi.update(conversationId, input),
+    onSuccess: (conversation) =>
+      applyConversationUpdate(queryClient, conversation),
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+}
+
+/**
+ * Assign / unassign. The caller passes the assignee's display identity
+ * alongside the member id so the detail cache can update without a
+ * refetch (the REST response only carries the user id).
+ */
+export function useAssignConversation(conversationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      workspaceMemberId: string | null;
+      assignee: ConversationAssignee | null;
+    }) => conversationsApi.assign(conversationId, input.workspaceMemberId),
+    onSuccess: (conversation, input) =>
+      applyConversationUpdate(queryClient, conversation, input.assignee),
+    onError: (error) => toast.error(getApiErrorMessage(error)),
   });
 }
 

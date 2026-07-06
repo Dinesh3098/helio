@@ -35,7 +35,7 @@ import {
   PaginatedConversationsDto,
 } from './dto/conversation-response.dto';
 import { QueryConversationsDto } from './dto/query-conversations.dto';
-import { UpdateConversationStatusDto } from './dto/update-conversation-status.dto';
+import { UpdateConversationDto } from './dto/update-conversation.dto';
 
 const ALL_ROLES = [
   WorkspaceMemberRole.OWNER,
@@ -82,18 +82,14 @@ export class ConversationsController {
 
   @Patch(':id')
   @Roles(...ALL_ROLES)
-  @ApiOperation({ summary: 'Update conversation status' })
+  @ApiOperation({ summary: 'Update conversation status and/or priority' })
   @ApiOkResponse({ type: ConversationResponseDto })
-  updateStatus(
+  update(
     @CurrentMembership() membership: WorkspaceMember,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateConversationStatusDto,
+    @Body() dto: UpdateConversationDto,
   ): Promise<ConversationResponseDto> {
-    return this.conversationsService.setStatus(
-      membership.workspaceId,
-      id,
-      dto.status,
-    );
+    return this.conversationsService.update(membership.workspaceId, id, dto);
   }
 
   @Post(':id/assign')
@@ -101,7 +97,7 @@ export class ConversationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      'Assign conversation (owner/admin: anyone; agent: themselves only)',
+      'Assign or unassign (owner/admin: anyone; agent: themselves only; null/omitted member unassigns)',
   })
   @ApiOkResponse({ type: ConversationResponseDto })
   assign(
