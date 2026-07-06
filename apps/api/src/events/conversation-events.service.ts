@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { AsyncLocalStorage } from 'node:async_hooks';
-import { AutomationTrigger } from '../database/entities';
-import type { MessageResponseDto } from '../modules/messages/dto/message-response.dto';
+import { Injectable, Logger } from "@nestjs/common";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { AutomationTrigger } from "../database/entities";
+import type { MessageResponseDto } from "../modules/messages/dto/message-response.dto";
 
 export interface ConversationEvent {
   trigger: AutomationTrigger;
@@ -46,7 +46,7 @@ export class ConversationEventsService {
       handler(event).catch((error: unknown) => {
         this.logger.error(
           `automation handler failed for ${event.trigger} on conversation ${event.conversationId}: ${
-            error instanceof Error ? error.message : 'unknown error'
+            error instanceof Error ? error.message : "unknown error"
           }`,
         );
       });

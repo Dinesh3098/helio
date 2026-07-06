@@ -1,8 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ConversationStatus } from '../../../database/entities';
+import { ApiProperty } from "@nestjs/swagger";
+import { ConversationStatus } from "../../../database/entities";
 
 class WidgetContactDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
   @ApiProperty()
@@ -10,7 +10,7 @@ class WidgetContactDto {
 }
 
 class WidgetConversationDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
   @ApiProperty({ enum: ConversationStatus })
@@ -25,7 +25,7 @@ class WidgetWorkspaceDto {
 export class WidgetSessionResponseDto {
   @ApiProperty({
     description:
-      'Short-lived JWT scoped to this visitor and conversation. Used as the Bearer token for /widget endpoints and as the Socket.IO handshake credential.',
+      "Short-lived JWT scoped to this visitor and conversation. Used as the Bearer token for /widget endpoints and as the Socket.IO handshake credential.",
   })
   visitorToken: string;
 

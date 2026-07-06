@@ -7,10 +7,7 @@ import type {
 } from "@/types/api";
 
 export const observabilityApi = {
-  auditLogs: async (params: {
-    resourceType?: string;
-    page: number;
-  }) =>
+  auditLogs: async (params: { resourceType?: string; page: number }) =>
     (
       await api.get<Paginated<AuditLogEntry>>("/audit/logs", {
         params: {

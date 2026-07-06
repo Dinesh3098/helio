@@ -1,5 +1,5 @@
-import { Global, Module } from '@nestjs/common';
-import { RequestContextService } from './request-context.service';
+import { Global, Module } from "@nestjs/common";
+import { RequestContextService } from "./request-context.service";
 
 /** Global: correlation data is read by logging, auditing, and metrics. */
 @Global()

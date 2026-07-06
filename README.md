@@ -4,16 +4,16 @@ AI-powered customer communication platform. Helio lets businesses talk to their 
 
 ## Tech Stack
 
-| Layer           | Technology                                   |
-| --------------- | -------------------------------------------- |
-| Monorepo        | Turborepo + pnpm workspaces                  |
-| Frontend        | Next.js 15 (App Router), React 19, TypeScript |
-| Backend         | NestJS, TypeScript, TypeORM                  |
-| Database        | PostgreSQL (Neon)                            |
-| Cache / Queues  | Redis (Upstash), BullMQ                      |
-| Realtime        | Socket.IO                                    |
-| Email           | Resend                                       |
-| AI              | Gemini                                       |
+| Layer          | Technology                                    |
+| -------------- | --------------------------------------------- |
+| Monorepo       | Turborepo + pnpm workspaces                   |
+| Frontend       | Next.js 15 (App Router), React 19, TypeScript |
+| Backend        | NestJS, TypeScript, TypeORM                   |
+| Database       | PostgreSQL (Neon)                             |
+| Cache / Queues | Redis (Upstash), BullMQ                       |
+| Realtime       | Socket.IO                                     |
+| Email          | Resend                                        |
+| AI             | Gemini                                        |
 
 ## Monorepo Structure
 

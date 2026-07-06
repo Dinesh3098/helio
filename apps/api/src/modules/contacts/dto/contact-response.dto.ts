@@ -1,7 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class ContactResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
   @ApiProperty()
@@ -21,13 +21,13 @@ export class ContactResponseDto {
 }
 
 export class ContactDetailResponseDto extends ContactResponseDto {
-  @ApiProperty({ description: 'Total conversations with this contact' })
+  @ApiProperty({ description: "Total conversations with this contact" })
   totalConversations: number;
 
-  @ApiProperty({ description: 'Conversations currently OPEN' })
+  @ApiProperty({ description: "Conversations currently OPEN" })
   openConversations: number;
 
-  @ApiPropertyOptional({ nullable: true, description: 'Latest activity' })
+  @ApiPropertyOptional({ nullable: true, description: "Latest activity" })
   lastConversationAt: Date | null;
 }
 

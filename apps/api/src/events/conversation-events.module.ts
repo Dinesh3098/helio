@@ -1,5 +1,5 @@
-import { Global, Module } from '@nestjs/common';
-import { ConversationEventsService } from './conversation-events.service';
+import { Global, Module } from "@nestjs/common";
+import { ConversationEventsService } from "./conversation-events.service";
 
 /**
  * Global: conversation events are emitted from many business modules

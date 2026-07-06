@@ -3,22 +3,22 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { createReadStream } from 'node:fs';
-import { unlink } from 'node:fs/promises';
-import { EntityManager, Repository } from 'typeorm';
-import { RequestContextService } from '../../common/request-context/request-context.service';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { createReadStream } from "node:fs";
+import { unlink } from "node:fs/promises";
+import { EntityManager, Repository } from "typeorm";
+import { RequestContextService } from "../../common/request-context/request-context.service";
 import {
   Attachment,
   Conversation,
   WorkspaceMemberRole,
-} from '../../database/entities';
-import { MetricsService } from '../../metrics/metrics.service';
-import { AuditService } from '../audit/audit.service';
-import { ObjectDownload } from '../storage/providers/storage-provider.interface';
-import { StorageService } from '../storage/storage.service';
-import { AttachmentResponseDto } from './dto/attachment.dto';
+} from "../../database/entities";
+import { MetricsService } from "../../metrics/metrics.service";
+import { AuditService } from "../audit/audit.service";
+import { ObjectDownload } from "../storage/providers/storage-provider.interface";
+import { StorageService } from "../storage/storage.service";
+import { AttachmentResponseDto } from "./dto/attachment.dto";
 
 export interface UploadFileInput {
   workspaceId: string;
@@ -61,7 +61,7 @@ export class AttachmentsService {
         select: { id: true },
       });
       if (!conversation) {
-        throw new NotFoundException('Conversation not found');
+        throw new NotFoundException("Conversation not found");
       }
     }
 
@@ -90,7 +90,7 @@ export class AttachmentsService {
 
       const context = this.requestContext.get();
       this.logger.log(
-        `attachment uploaded requestId=${context?.requestId ?? '-'} workspaceId=${input.workspaceId} userId=${input.uploadedByUserId ?? 'system'} provider=${stored.provider} latencyMs=${Date.now() - startedAt} size=${stored.size} filename="${stored.filename}"`,
+        `attachment uploaded requestId=${context?.requestId ?? "-"} workspaceId=${input.workspaceId} userId=${input.uploadedByUserId ?? "system"} provider=${stored.provider} latencyMs=${Date.now() - startedAt} size=${stored.size} filename="${stored.filename}"`,
       );
       this.metricsService.recordAttachmentUpload(
         stored.provider,
@@ -100,9 +100,9 @@ export class AttachmentsService {
       this.auditService.record({
         workspaceId: input.workspaceId,
         actorUserId: input.uploadedByUserId,
-        resourceType: 'attachment',
+        resourceType: "attachment",
         resourceId: attachment.id,
-        action: 'attachment.uploaded',
+        action: "attachment.uploaded",
         metadata: {
           filename: stored.filename,
           size: stored.size,
@@ -162,7 +162,7 @@ export class AttachmentsService {
       attachment.uploadedByUserId !== actor.userId
     ) {
       throw new ForbiddenException(
-        'Agents can only delete files they uploaded',
+        "Agents can only delete files they uploaded",
       );
     }
 
@@ -172,9 +172,9 @@ export class AttachmentsService {
     this.metricsService.recordAttachmentDeleted(attachment.provider);
     this.auditService.record({
       workspaceId,
-      resourceType: 'attachment',
+      resourceType: "attachment",
       resourceId: attachmentId,
-      action: 'attachment.deleted',
+      action: "attachment.deleted",
       metadata: {
         filename: attachment.filename,
         size: Number(attachment.size),
@@ -202,19 +202,19 @@ export class AttachmentsService {
       : this.attachmentsRepository;
 
     const attachments = await repository
-      .createQueryBuilder('a')
-      .where('a.id IN (:...ids)', { ids: attachmentIds })
-      .andWhere('a.workspace_id = :workspaceId', { workspaceId })
-      .andWhere('a.message_id IS NULL')
+      .createQueryBuilder("a")
+      .where("a.id IN (:...ids)", { ids: attachmentIds })
+      .andWhere("a.workspace_id = :workspaceId", { workspaceId })
+      .andWhere("a.message_id IS NULL")
       .andWhere(
-        '(a.conversation_id = :conversationId OR a.conversation_id IS NULL)',
+        "(a.conversation_id = :conversationId OR a.conversation_id IS NULL)",
         { conversationId },
       )
       .getMany();
 
     if (attachments.length !== attachmentIds.length) {
       throw new NotFoundException(
-        'One or more attachments were not found or already sent',
+        "One or more attachments were not found or already sent",
       );
     }
 
@@ -233,7 +233,7 @@ export class AttachmentsService {
       where: { id: attachmentId, workspaceId },
     });
     if (!attachment) {
-      throw new NotFoundException('Attachment not found');
+      throw new NotFoundException("Attachment not found");
     }
     return attachment;
   }

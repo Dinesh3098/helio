@@ -1,9 +1,9 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional } from 'class-validator';
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { IsEnum, IsOptional } from "class-validator";
 import {
   ConversationPriority,
   ConversationStatus,
-} from '../../../database/entities';
+} from "../../../database/entities";
 
 export class UpdateConversationDto {
   @ApiPropertyOptional({ enum: ConversationStatus })

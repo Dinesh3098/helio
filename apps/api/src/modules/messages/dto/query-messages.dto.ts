@@ -1,11 +1,11 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { Type } from "class-transformer";
+import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
 
 export class QueryMessagesDto {
   @ApiPropertyOptional({
     description:
-      'Opaque cursor from a previous response; returns messages older than it.',
+      "Opaque cursor from a previous response; returns messages older than it.",
   })
   @IsOptional()
   @IsString()

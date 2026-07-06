@@ -1,5 +1,5 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { WorkspaceMember } from '../../database/entities';
+import { createParamDecorator, ExecutionContext } from "@nestjs/common";
+import { WorkspaceMember } from "../../database/entities";
 
 /**
  * Returns the workspace membership RolesGuard resolved and attached to the

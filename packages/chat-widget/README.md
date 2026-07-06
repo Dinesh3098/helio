@@ -20,11 +20,11 @@ scripts.
 
 ### Initialization options
 
-| Option        | Required | Description                                  |
-| ------------- | -------- | -------------------------------------------- |
-| `workspaceId` | yes      | Workspace the widget belongs to (uuid).       |
-| `apiUrl`      | yes      | Helio API origin.                             |
-| `socketUrl`   | no       | Socket.IO origin; defaults to `apiUrl`.       |
+| Option        | Required | Description                             |
+| ------------- | -------- | --------------------------------------- |
+| `workspaceId` | yes      | Workspace the widget belongs to (uuid). |
+| `apiUrl`      | yes      | Helio API origin.                       |
+| `socketUrl`   | no       | Socket.IO origin; defaults to `apiUrl`. |
 
 `init()` is idempotent — calling it twice logs a warning and does nothing.
 

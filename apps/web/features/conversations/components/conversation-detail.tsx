@@ -131,8 +131,8 @@ export function ConversationDetail({
               role="status"
               aria-live="polite"
             >
-              {typingNames.join(", ")}{" "}
-              {typingNames.length === 1 ? "is" : "are"} typing…
+              {typingNames.join(", ")} {typingNames.length === 1 ? "is" : "are"}{" "}
+              typing…
             </p>
           )}
 

@@ -8,11 +8,11 @@ import {
   NotFoundException,
   ServiceUnavailableException,
   UnprocessableEntityException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { randomUUID } from 'node:crypto';
-import { Brackets, In, Repository } from 'typeorm';
-import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { randomUUID } from "node:crypto";
+import { Brackets, In, Repository } from "typeorm";
+import type { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
 import {
   AutomationTrigger,
   Contact,
@@ -22,29 +22,29 @@ import {
   EmailAccount,
   EmailThread,
   type MessageMetadata,
-} from '../../database/entities';
-import { ConversationEventsService } from '../../events/conversation-events.service';
-import { MetricsService } from '../../metrics/metrics.service';
-import { AuditService } from '../audit/audit.service';
-import { RealtimeGateway } from '../../realtime/realtime.gateway';
-import { MessageResponseDto } from '../messages/dto/message-response.dto';
-import { MessagesService } from '../messages/messages.service';
+} from "../../database/entities";
+import { ConversationEventsService } from "../../events/conversation-events.service";
+import { MetricsService } from "../../metrics/metrics.service";
+import { AuditService } from "../audit/audit.service";
+import { RealtimeGateway } from "../../realtime/realtime.gateway";
+import { MessageResponseDto } from "../messages/dto/message-response.dto";
+import { MessagesService } from "../messages/messages.service";
 import {
   CreateEmailAccountDto,
   EmailAccountResponseDto,
   UpdateEmailAccountDto,
-} from './dto/email-account.dto';
+} from "./dto/email-account.dto";
 import {
   InboundEmailDto,
   InboundEmailResultDto,
-} from './dto/inbound-email.dto';
+} from "./dto/inbound-email.dto";
 import {
   EMAIL_PROVIDER,
   EmailProviderError,
   type EmailProvider,
-} from './providers/provider.interface';
+} from "./providers/provider.interface";
 
-const HELIO_MESSAGE_ID_DOMAIN = 'helio.mail';
+const HELIO_MESSAGE_ID_DOMAIN = "helio.mail";
 
 @Injectable()
 export class EmailService {
@@ -72,7 +72,7 @@ export class EmailService {
   async listAccounts(workspaceId: string): Promise<EmailAccountResponseDto[]> {
     const accounts = await this.accountsRepository.find({
       where: { workspaceId },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
     });
     return accounts.map((account) => this.toAccountResponse(account));
   }
@@ -88,7 +88,7 @@ export class EmailService {
     });
     if (existing) {
       throw new ConflictException(
-        'This email address is already connected to a workspace',
+        "This email address is already connected to a workspace",
       );
     }
 
@@ -102,9 +102,9 @@ export class EmailService {
     );
     this.auditService.record({
       workspaceId,
-      resourceType: 'email_account',
+      resourceType: "email_account",
       resourceId: account.id,
-      action: 'email_account.created',
+      action: "email_account.created",
       metadata: { email: account.email },
     });
     return this.toAccountResponse(account);
@@ -125,7 +125,7 @@ export class EmailService {
         });
         if (duplicate) {
           throw new ConflictException(
-            'This email address is already connected to a workspace',
+            "This email address is already connected to a workspace",
           );
         }
         account.email = email;
@@ -140,9 +140,9 @@ export class EmailService {
     await this.accountsRepository.save(account);
     this.auditService.record({
       workspaceId,
-      resourceType: 'email_account',
+      resourceType: "email_account",
       resourceId: account.id,
-      action: 'email_account.updated',
+      action: "email_account.updated",
       metadata: { email: account.email, fields: Object.keys(dto) },
     });
     return this.toAccountResponse(account);
@@ -154,9 +154,9 @@ export class EmailService {
     await this.accountsRepository.remove(account);
     this.auditService.record({
       workspaceId,
-      resourceType: 'email_account',
+      resourceType: "email_account",
       resourceId: removed.id,
-      action: 'email_account.deleted',
+      action: "email_account.deleted",
       metadata: { email: removed.email },
     });
   }
@@ -179,31 +179,31 @@ export class EmailService {
       relations: { contact: true },
     });
     if (!conversation) {
-      throw new NotFoundException('Conversation not found');
+      throw new NotFoundException("Conversation not found");
     }
     if (conversation.channel !== ConversationChannel.EMAIL) {
       throw new BadRequestException(
-        'This is not an email conversation — reply in the chat composer',
+        "This is not an email conversation — reply in the chat composer",
       );
     }
     if (conversation.status === ConversationStatus.RESOLVED) {
       throw new ConflictException(
-        'Resolved conversations cannot receive new messages. Reopen the conversation first.',
+        "Resolved conversations cannot receive new messages. Reopen the conversation first.",
       );
     }
     if (!conversation.contact.email) {
       throw new UnprocessableEntityException(
-        'This contact has no email address',
+        "This contact has no email address",
       );
     }
 
     const account = await this.accountsRepository.findOne({
-      where: { workspaceId, status: 'ACTIVE' },
-      order: { createdAt: 'ASC' },
+      where: { workspaceId, status: "ACTIVE" },
+      order: { createdAt: "ASC" },
     });
     if (!account) {
       throw new UnprocessableEntityException(
-        'Connect an active email account before replying by email',
+        "Connect an active email account before replying by email",
       );
     }
 
@@ -213,14 +213,13 @@ export class EmailService {
 
     const outboundMessageId = `<${randomUUID()}@${HELIO_MESSAGE_ID_DOMAIN}>`;
     const subject = conversation.subject
-      ? conversation.subject.startsWith('Re:')
+      ? conversation.subject.startsWith("Re:")
         ? conversation.subject
         : `Re: ${conversation.subject}`
       : `Your conversation with ${account.displayName ?? account.email}`;
 
     const lastKnownId = thread
-      ? (this.parseIdChain(thread.references).at(-1) ??
-        thread.messageIdHeader)
+      ? (this.parseIdChain(thread.references).at(-1) ?? thread.messageIdHeader)
       : undefined;
 
     try {
@@ -231,8 +230,8 @@ export class EmailService {
         subject,
         text: content,
         headers: {
-          'Message-ID': outboundMessageId,
-          ...(lastKnownId ? { 'In-Reply-To': lastKnownId } : {}),
+          "Message-ID": outboundMessageId,
+          ...(lastKnownId ? { "In-Reply-To": lastKnownId } : {}),
           ...(thread
             ? {
                 References: [
@@ -240,16 +239,16 @@ export class EmailService {
                   thread.messageIdHeader,
                 ]
                   .filter((id, i, all) => all.indexOf(id) === i)
-                  .join(' '),
+                  .join(" "),
               }
             : {}),
         },
       });
     } catch (error) {
-      this.metricsService.recordEmailOutbound('error');
+      this.metricsService.recordEmailOutbound("error");
       throw this.mapProviderError(error);
     }
-    this.metricsService.recordEmailOutbound('success');
+    this.metricsService.recordEmailOutbound("success");
 
     const metadata: MessageMetadata = {
       email: {
@@ -304,13 +303,11 @@ export class EmailService {
     });
     if (!account) {
       throw new NotFoundException(
-        'No email account is connected for this address',
+        "No email account is connected for this address",
       );
     }
-    if (account.status !== 'ACTIVE') {
-      throw new UnprocessableEntityException(
-        'This email account is disabled',
-      );
+    if (account.status !== "ACTIVE") {
+      throw new UnprocessableEntityException("This email account is disabled");
     }
     const workspaceId = account.workspaceId;
 
@@ -329,7 +326,10 @@ export class EmailService {
       });
       // A reply to a resolved thread starts fresh — same rule as the
       // chat widget, keeping RESOLVED terminal across channels.
-      if (!conversation || conversation.status === ConversationStatus.RESOLVED) {
+      if (
+        !conversation ||
+        conversation.status === ConversationStatus.RESOLVED
+      ) {
         thread = null;
         threadReused = false;
       }
@@ -425,9 +425,9 @@ export class EmailService {
     }
 
     const qb = this.threadsRepository
-      .createQueryBuilder('t')
-      .innerJoinAndSelect('t.conversation', 'c')
-      .where('c.workspace_id = :workspaceId', { workspaceId })
+      .createQueryBuilder("t")
+      .innerJoinAndSelect("t.conversation", "c")
+      .where("c.workspace_id = :workspaceId", { workspaceId })
       .andWhere(
         new Brackets((where) => {
           candidates.forEach((id, index) => {
@@ -447,13 +447,13 @@ export class EmailService {
     const chain = this.parseIdChain(thread.references);
     if (!chain.includes(messageId)) {
       chain.push(messageId);
-      thread.references = chain.join(' ');
+      thread.references = chain.join(" ");
       await this.threadsRepository.save(thread);
     }
   }
 
   private parseIdChain(references: string | null | undefined): string[] {
-    return (references ?? '').split(/\s+/).filter(Boolean);
+    return (references ?? "").split(/\s+/).filter(Boolean);
   }
 
   private async findOrCreateContact(
@@ -470,7 +470,7 @@ export class EmailService {
       this.contactsRepository.create({
         workspaceId,
         email,
-        name: name?.trim() || email.split('@')[0] || email,
+        name: name?.trim() || email.split("@")[0] || email,
       }),
     );
   }
@@ -483,7 +483,7 @@ export class EmailService {
       where: { id: accountId, workspaceId },
     });
     if (!account) {
-      throw new NotFoundException('Email account not found');
+      throw new NotFoundException("Email account not found");
     }
     return account;
   }
@@ -491,15 +491,15 @@ export class EmailService {
   private mapProviderError(error: unknown): Error {
     if (error instanceof EmailProviderError) {
       switch (error.reason) {
-        case 'timeout':
+        case "timeout":
           return new GatewayTimeoutException(error.message);
-        case 'rejected':
+        case "rejected":
           return new UnprocessableEntityException(error.message);
-        case 'unavailable':
+        case "unavailable":
           return new ServiceUnavailableException(error.message);
       }
     }
-    return new ServiceUnavailableException('Email sending failed');
+    return new ServiceUnavailableException("Email sending failed");
   }
 
   private toAccountResponse(account: EmailAccount): EmailAccountResponseDto {

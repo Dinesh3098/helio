@@ -9,17 +9,9 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { InitialsAvatar } from "@/components/shared/initials-avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  useContact,
-  useContactConversations,
-} from "@/features/contacts/hooks";
+import { useContact, useContactConversations } from "@/features/contacts/hooks";
 import { EditContactDialog } from "@/features/contacts/components/edit-contact-dialog";
 import {
   ChannelIcon,

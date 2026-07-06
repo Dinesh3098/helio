@@ -51,8 +51,18 @@ const SORT_OPTIONS: {
   sortBy: ArticleSort;
   sortOrder: "ASC" | "DESC";
 }[] = [
-  { value: "updated", label: "Recently updated", sortBy: "updatedAt", sortOrder: "DESC" },
-  { value: "newest", label: "Newest first", sortBy: "createdAt", sortOrder: "DESC" },
+  {
+    value: "updated",
+    label: "Recently updated",
+    sortBy: "updatedAt",
+    sortOrder: "DESC",
+  },
+  {
+    value: "newest",
+    label: "Newest first",
+    sortBy: "createdAt",
+    sortOrder: "DESC",
+  },
   { value: "title", label: "Title A–Z", sortBy: "title", sortOrder: "ASC" },
 ];
 
@@ -151,7 +161,9 @@ export function ArticlesTable() {
           <SelectTrigger
             className="w-44"
             aria-label="Sort articles"
-            title={searching ? "Search results are ranked by relevance" : undefined}
+            title={
+              searching ? "Search results are ranked by relevance" : undefined
+            }
           >
             <SelectValue />
           </SelectTrigger>
@@ -176,9 +188,7 @@ export function ArticlesTable() {
       ) : articles.data.data.length === 0 ? (
         <EmptyState
           icon={BookOpen}
-          title={
-            debouncedSearch ? "No matching articles" : "No articles yet"
-          }
+          title={debouncedSearch ? "No matching articles" : "No articles yet"}
           description={
             debouncedSearch
               ? "Try different search terms."

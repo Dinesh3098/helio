@@ -1,10 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsOptional, IsUUID } from "class-validator";
 
 export class UploadAttachmentDto {
   @ApiPropertyOptional({
-    format: 'uuid',
-    description: 'Conversation this file belongs to (validated in-workspace)',
+    format: "uuid",
+    description: "Conversation this file belongs to (validated in-workspace)",
   })
   @IsOptional()
   @IsUUID()
@@ -12,19 +12,19 @@ export class UploadAttachmentDto {
 }
 
 export class AttachmentResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
-  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @ApiPropertyOptional({ format: "uuid", nullable: true })
   conversationId: string | null;
 
-  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @ApiPropertyOptional({ format: "uuid", nullable: true })
   messageId: string | null;
 
-  @ApiProperty({ example: 'invoice.pdf' })
+  @ApiProperty({ example: "invoice.pdf" })
   filename: string;
 
-  @ApiProperty({ example: 'application/pdf' })
+  @ApiProperty({ example: "application/pdf" })
   mimeType: string;
 
   @ApiProperty({ example: 52431 })

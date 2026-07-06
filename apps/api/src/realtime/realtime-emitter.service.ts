@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import type { Server } from 'socket.io';
+import { Injectable } from "@nestjs/common";
+import type { Server } from "socket.io";
 import {
   conversationRoom,
   SERVER_EVENTS,
   workspaceRoom,
-} from './realtime.events';
+} from "./realtime.events";
 
 /**
  * Dependency-free bridge between business modules and the Socket.IO

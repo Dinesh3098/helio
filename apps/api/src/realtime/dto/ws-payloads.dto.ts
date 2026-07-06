@@ -1,5 +1,5 @@
-import { IsUUID } from 'class-validator';
-import { CreateMessageDto } from '../../modules/messages/dto/create-message.dto';
+import { IsUUID } from "class-validator";
+import { CreateMessageDto } from "../../modules/messages/dto/create-message.dto";
 
 export class ConversationRoomDto {
   @IsUUID()

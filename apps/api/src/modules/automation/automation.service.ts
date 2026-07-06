@@ -1,14 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import type { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
 import {
   AutomationExecution,
   AutomationRule,
   Conversation,
-} from '../../database/entities';
-import { AutomationEngineService } from './automation-engine.service';
-import { validateActions, validateConditions } from './automation.types';
+} from "../../database/entities";
+import { AutomationEngineService } from "./automation-engine.service";
+import { validateActions, validateConditions } from "./automation.types";
 import {
   CreateRuleDto,
   ExecutionResponseDto,
@@ -17,7 +17,7 @@ import {
   RuleResponseDto,
   TestRuleResultDto,
   UpdateRuleDto,
-} from './dto/automation.dto';
+} from "./dto/automation.dto";
 
 /** Rule CRUD, history, and the dashboard's test runner. */
 @Injectable()
@@ -36,7 +36,7 @@ export class AutomationService {
     const rules = await this.rulesRepository.find({
       where: { workspaceId },
       relations: { createdByUser: true },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
     });
     return rules.map((rule) => this.toResponse(rule));
   }
@@ -98,7 +98,7 @@ export class AutomationService {
       relations: { contact: true },
     });
     if (!conversation) {
-      throw new NotFoundException('Conversation not found');
+      throw new NotFoundException("Conversation not found");
     }
     return this.engine.runRule(rule, conversation);
   }
@@ -108,17 +108,17 @@ export class AutomationService {
     query: QueryHistoryDto,
   ): Promise<PaginatedExecutionsDto> {
     const qb = this.executionsRepository
-      .createQueryBuilder('e')
-      .innerJoinAndSelect('e.rule', 'rule')
-      .leftJoinAndSelect('e.conversation', 'conversation')
-      .leftJoinAndSelect('conversation.contact', 'contact')
-      .where('rule.workspace_id = :workspaceId', { workspaceId })
-      .orderBy('e.started_at', 'DESC')
+      .createQueryBuilder("e")
+      .innerJoinAndSelect("e.rule", "rule")
+      .leftJoinAndSelect("e.conversation", "conversation")
+      .leftJoinAndSelect("conversation.contact", "contact")
+      .where("rule.workspace_id = :workspaceId", { workspaceId })
+      .orderBy("e.started_at", "DESC")
       .offset(query.skip)
       .limit(query.limit);
 
     if (query.ruleId) {
-      qb.andWhere('e.rule_id = :ruleId', { ruleId: query.ruleId });
+      qb.andWhere("e.rule_id = :ruleId", { ruleId: query.ruleId });
     }
 
     const [executions, total] = await qb.getManyAndCount();
@@ -139,7 +139,7 @@ export class AutomationService {
       relations: { createdByUser: true },
     });
     if (!rule) {
-      throw new NotFoundException('Automation rule not found');
+      throw new NotFoundException("Automation rule not found");
     }
     return this.toResponse(rule);
   }
@@ -152,7 +152,7 @@ export class AutomationService {
       where: { id: ruleId, workspaceId },
     });
     if (!rule) {
-      throw new NotFoundException('Automation rule not found');
+      throw new NotFoundException("Automation rule not found");
     }
     return rule;
   }
@@ -179,7 +179,7 @@ export class AutomationService {
       ruleId: execution.ruleId,
       ruleName: execution.rule.name,
       conversationId: execution.conversationId,
-      contactName: execution.conversation?.contact?.name ?? 'Unknown',
+      contactName: execution.conversation?.contact?.name ?? "Unknown",
       status: execution.status,
       error: execution.error,
       startedAt: execution.startedAt,

@@ -1,18 +1,18 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
 import {
   Conversation,
   ConversationSummary,
   HelpArticle,
   Workspace,
-} from '../../database/entities';
-import { MessagesModule } from '../messages/messages.module';
-import { WorkspaceMembersModule } from '../workspace-members/workspace-members.module';
-import { AiRateLimitGuard } from './ai-rate-limit.guard';
-import { AiController } from './ai.controller';
-import { AiService } from './ai.service';
-import { AI_PROVIDER } from './providers/ai-provider.interface';
-import { GeminiProvider } from './providers/gemini.provider';
+} from "../../database/entities";
+import { MessagesModule } from "../messages/messages.module";
+import { WorkspaceMembersModule } from "../workspace-members/workspace-members.module";
+import { AiRateLimitGuard } from "./ai-rate-limit.guard";
+import { AiController } from "./ai.controller";
+import { AiService } from "./ai.service";
+import { AI_PROVIDER } from "./providers/ai-provider.interface";
+import { GeminiProvider } from "./providers/gemini.provider";
 
 @Module({
   imports: [

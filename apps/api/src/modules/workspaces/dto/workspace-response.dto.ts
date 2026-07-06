@@ -1,10 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
 
 export class WorkspaceResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
-  @ApiProperty({ example: 'Acme Inc' })
+  @ApiProperty({ example: "Acme Inc" })
   name: string;
 
   @ApiProperty()

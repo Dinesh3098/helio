@@ -4,10 +4,10 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
-import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { DataSource, In, Repository } from "typeorm";
+import type { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
 import {
   AutomationTrigger,
   Conversation,
@@ -17,15 +17,15 @@ import {
   MessageType,
   User,
   type MessageMetadata,
-} from '../../database/entities';
-import { ConversationEventsService } from '../../events/conversation-events.service';
-import { AttachmentsService } from '../attachments/attachments.service';
-import { CreateMessageDto } from './dto/create-message.dto';
+} from "../../database/entities";
+import { ConversationEventsService } from "../../events/conversation-events.service";
+import { AttachmentsService } from "../attachments/attachments.service";
+import { CreateMessageDto } from "./dto/create-message.dto";
 import {
   MessageResponseDto,
   MessagesPageDto,
-} from './dto/message-response.dto';
-import { QueryMessagesDto } from './dto/query-messages.dto';
+} from "./dto/message-response.dto";
+import { QueryMessagesDto } from "./dto/query-messages.dto";
 
 /** Keyset cursor: strictly-descending (created_at, id) position. */
 interface MessageCursor {
@@ -66,16 +66,16 @@ export class MessagesService {
     );
 
     const qb = this.messagesRepository
-      .createQueryBuilder('m')
-      .where('m.conversation_id = :conversationId', { conversationId })
-      .orderBy('m.created_at', 'DESC')
-      .addOrderBy('m.id', 'DESC')
+      .createQueryBuilder("m")
+      .where("m.conversation_id = :conversationId", { conversationId })
+      .orderBy("m.created_at", "DESC")
+      .addOrderBy("m.id", "DESC")
       // One extra row answers "is there an older page?" without a COUNT.
       .limit(query.limit + 1);
 
     if (query.cursor) {
       const cursor = this.decodeCursor(query.cursor);
-      qb.andWhere('(m.created_at, m.id) < (:cursorTs, :cursorId)', {
+      qb.andWhere("(m.created_at, m.id) < (:cursorTs, :cursorId)", {
         cursorTs: cursor.t,
         cursorId: cursor.id,
       });
@@ -91,7 +91,10 @@ export class MessagesService {
     const userNames = await this.loadUserNames(page);
     return {
       data: page.map((message) =>
-        this.toResponse(message, this.senderName(message, conversation, userNames)),
+        this.toResponse(
+          message,
+          this.senderName(message, conversation, userNames),
+        ),
       ),
       nextCursor,
     };
@@ -111,7 +114,7 @@ export class MessagesService {
     const message = await this.append(conversation, {
       senderType: MessageSenderType.USER,
       senderId: user.id,
-      content: dto.content ?? '',
+      content: dto.content ?? "",
       metadata: metadata ?? null,
       attachmentIds: dto.attachmentIds,
     });
@@ -144,7 +147,7 @@ export class MessagesService {
       senderId: null,
       content,
     });
-    return this.toResponse(message, 'Automation');
+    return this.toResponse(message, "Automation");
   }
 
   /**
@@ -164,13 +167,13 @@ export class MessagesService {
     );
     if (conversation.contactId !== visitor.contactId) {
       throw new ForbiddenException(
-        'This conversation belongs to another visitor',
+        "This conversation belongs to another visitor",
       );
     }
     const message = await this.append(conversation, {
       senderType: MessageSenderType.CONTACT,
       senderId: visitor.contactId,
-      content: dto.content ?? '',
+      content: dto.content ?? "",
       metadata: metadata ?? null,
       attachmentIds: dto.attachmentIds,
     });
@@ -202,12 +205,12 @@ export class MessagesService {
   ): Promise<Message> {
     if (conversation.status === ConversationStatus.RESOLVED) {
       throw new ConflictException(
-        'Resolved conversations cannot receive new messages. Reopen the conversation first.',
+        "Resolved conversations cannot receive new messages. Reopen the conversation first.",
       );
     }
     // Text OR files — a message must carry at least one of them.
     if (!input.content && !input.attachmentIds?.length) {
-      throw new BadRequestException('Message needs text or an attachment');
+      throw new BadRequestException("Message needs text or an attachment");
     }
 
     return this.dataSource.transaction(async (manager) => {
@@ -252,7 +255,7 @@ export class MessagesService {
       // Activity in a snoozed conversation pulls it back into the inbox.
       const preview = input.content
         ? this.toPreview(input.content)
-        : `📎 ${linkedFilenames[0] ?? 'Attachment'}${linkedFilenames.length > 1 ? ` +${linkedFilenames.length - 1}` : ''}`;
+        : `📎 ${linkedFilenames[0] ?? "Attachment"}${linkedFilenames.length > 1 ? ` +${linkedFilenames.length - 1}` : ""}`;
       await manager.getRepository(Conversation).update(conversation.id, {
         lastMessagePreview: preview,
         lastMessageAt: message.createdAt,
@@ -274,7 +277,7 @@ export class MessagesService {
       relations: { contact: true },
     });
     if (!conversation) {
-      throw new NotFoundException('Conversation not found');
+      throw new NotFoundException("Conversation not found");
     }
     return conversation;
   }
@@ -308,7 +311,7 @@ export class MessagesService {
       return conversation.contact.name;
     }
     if (!message.senderId) return null;
-    return userNames.get(message.senderId) ?? 'Former teammate';
+    return userNames.get(message.senderId) ?? "Former teammate";
   }
 
   private toResponse(
@@ -329,7 +332,7 @@ export class MessagesService {
   }
 
   private toPreview(content: string): string {
-    return content.replace(/\s+/g, ' ').trim().slice(0, PREVIEW_LENGTH);
+    return content.replace(/\s+/g, " ").trim().slice(0, PREVIEW_LENGTH);
   }
 
   private encodeCursor(message: Message): string {
@@ -337,20 +340,20 @@ export class MessagesService {
       t: message.createdAt.toISOString(),
       id: message.id,
     };
-    return Buffer.from(JSON.stringify(cursor)).toString('base64url');
+    return Buffer.from(JSON.stringify(cursor)).toString("base64url");
   }
 
   private decodeCursor(raw: string): MessageCursor {
     try {
       const parsed = JSON.parse(
-        Buffer.from(raw, 'base64url').toString('utf8'),
+        Buffer.from(raw, "base64url").toString("utf8"),
       ) as MessageCursor;
-      if (typeof parsed.t !== 'string' || typeof parsed.id !== 'string') {
-        throw new Error('malformed');
+      if (typeof parsed.t !== "string" || typeof parsed.id !== "string") {
+        throw new Error("malformed");
       }
       return parsed;
     } catch {
-      throw new BadRequestException('Invalid pagination cursor');
+      throw new BadRequestException("Invalid pagination cursor");
     }
   }
 }

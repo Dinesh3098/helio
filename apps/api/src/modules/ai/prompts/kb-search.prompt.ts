@@ -15,10 +15,10 @@ export function kbSearchPrompt(input: KbSearchPromptInput): string {
     .map(
       (article) =>
         `- id: ${article.id} | title: ${article.title}${
-          article.excerpt ? ` | about: ${article.excerpt}` : ''
+          article.excerpt ? ` | about: ${article.excerpt}` : ""
         }`,
     )
-    .join('\n');
+    .join("\n");
 
   return `You match support conversations to existing help-center articles.
 

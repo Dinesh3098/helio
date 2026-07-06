@@ -1,10 +1,10 @@
-import { createHash, randomBytes } from 'node:crypto';
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, IsNull, MoreThan, Repository } from 'typeorm';
-import { AppConfig } from '../../config/configuration';
-import { UserSession } from '../../database/entities';
+import { createHash, randomBytes } from "node:crypto";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { InjectRepository } from "@nestjs/typeorm";
+import { EntityManager, IsNull, MoreThan, Repository } from "typeorm";
+import { AppConfig } from "../../config/configuration";
+import { UserSession } from "../../database/entities";
 
 /**
  * Owns the user_sessions table. Refresh tokens are 384-bit random strings;
@@ -22,17 +22,17 @@ export class SessionsService {
     private readonly sessionsRepository: Repository<UserSession>,
     config: ConfigService<AppConfig, true>,
   ) {
-    this.refreshTtlDays = config.get('jwt.refreshExpiresInDays', {
+    this.refreshTtlDays = config.get("jwt.refreshExpiresInDays", {
       infer: true,
     });
   }
 
   generateRefreshToken(): string {
-    return randomBytes(48).toString('base64url');
+    return randomBytes(48).toString("base64url");
   }
 
   private hashToken(token: string): string {
-    return createHash('sha256').update(token).digest('hex');
+    return createHash("sha256").update(token).digest("hex");
   }
 
   private expiryDate(): Date {

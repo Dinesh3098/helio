@@ -11,7 +11,7 @@ import {
   Post,
   Query,
   UseGuards,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -19,15 +19,15 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
-} from '@nestjs/swagger';
-import { CurrentMembership } from '../../common/decorators/current-membership.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
-import { WorkspaceMember, WorkspaceMemberRole } from '../../database/entities';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AutomationService } from './automation.service';
+} from "@nestjs/swagger";
+import { CurrentMembership } from "../../common/decorators/current-membership.decorator";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import type { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
+import { WorkspaceMember, WorkspaceMemberRole } from "../../database/entities";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { AutomationService } from "./automation.service";
 import {
   CreateRuleDto,
   PaginatedExecutionsDto,
@@ -36,7 +36,7 @@ import {
   TestRuleDto,
   TestRuleResultDto,
   UpdateRuleDto,
-} from './dto/automation.dto';
+} from "./dto/automation.dto";
 
 // Automation changes workspace behavior — owner/admin territory.
 const MANAGER_ROLES = [
@@ -44,20 +44,20 @@ const MANAGER_ROLES = [
   WorkspaceMemberRole.ADMIN,
 ] as const;
 
-@ApiTags('automation')
+@ApiTags("automation")
 @ApiBearerAuth()
 @ApiHeader({
-  name: 'x-workspace-id',
+  name: "x-workspace-id",
   required: false,
   description:
-    'Workspace to operate on. Optional when the user belongs to exactly one workspace.',
+    "Workspace to operate on. Optional when the user belongs to exactly one workspace.",
 })
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('automation')
+@Controller("automation")
 export class AutomationController {
   constructor(private readonly automationService: AutomationService) {}
 
-  @Get('rules')
+  @Get("rules")
   @Roles(...MANAGER_ROLES)
   @ApiOperation({ summary: "Workspace's automation rules" })
   @ApiOkResponse({ type: RuleResponseDto, isArray: true })
@@ -67,9 +67,9 @@ export class AutomationController {
     return this.automationService.list(membership.workspaceId);
   }
 
-  @Post('rules')
+  @Post("rules")
   @Roles(...MANAGER_ROLES)
-  @ApiOperation({ summary: 'Create an automation rule' })
+  @ApiOperation({ summary: "Create an automation rule" })
   @ApiCreatedResponse({ type: RuleResponseDto })
   create(
     @CurrentMembership() membership: WorkspaceMember,
@@ -79,40 +79,40 @@ export class AutomationController {
     return this.automationService.create(membership.workspaceId, user, dto);
   }
 
-  @Patch('rules/:id')
+  @Patch("rules/:id")
   @Roles(...MANAGER_ROLES)
-  @ApiOperation({ summary: 'Update a rule (incl. enable/disable)' })
+  @ApiOperation({ summary: "Update a rule (incl. enable/disable)" })
   @ApiOkResponse({ type: RuleResponseDto })
   update(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateRuleDto,
   ): Promise<RuleResponseDto> {
     return this.automationService.update(membership.workspaceId, id, dto);
   }
 
-  @Delete('rules/:id')
+  @Delete("rules/:id")
   @Roles(...MANAGER_ROLES)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a rule (its history goes with it)' })
+  @ApiOperation({ summary: "Delete a rule (its history goes with it)" })
   async remove(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
   ): Promise<void> {
     await this.automationService.remove(membership.workspaceId, id);
   }
 
-  @Post('rules/:id/test')
+  @Post("rules/:id/test")
   @Roles(...MANAGER_ROLES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      'Run a rule against a conversation now (ignores enabled; actions DO execute)',
+      "Run a rule against a conversation now (ignores enabled; actions DO execute)",
   })
   @ApiOkResponse({ type: TestRuleResultDto })
   test(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: TestRuleDto,
   ): Promise<TestRuleResultDto> {
     return this.automationService.test(
@@ -122,9 +122,9 @@ export class AutomationController {
     );
   }
 
-  @Get('history')
+  @Get("history")
   @Roles(...MANAGER_ROLES)
-  @ApiOperation({ summary: 'Execution history (paginated, newest first)' })
+  @ApiOperation({ summary: "Execution history (paginated, newest first)" })
   @ApiOkResponse({ type: PaginatedExecutionsDto })
   history(
     @CurrentMembership() membership: WorkspaceMember,

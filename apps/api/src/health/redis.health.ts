@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
 import {
   HealthIndicatorResult,
   HealthIndicatorService,
-} from '@nestjs/terminus';
-import { RedisService } from '../redis/redis.service';
+} from "@nestjs/terminus";
+import { RedisService } from "../redis/redis.service";
 
 @Injectable()
 export class RedisHealthIndicator {
@@ -19,7 +19,7 @@ export class RedisHealthIndicator {
       return indicator.up();
     } catch (error) {
       return indicator.down({
-        message: error instanceof Error ? error.message : 'Redis ping failed',
+        message: error instanceof Error ? error.message : "Redis ping failed",
       });
     }
   }

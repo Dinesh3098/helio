@@ -20,10 +20,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <PageHeader
-        title="Settings"
-        description="Configure your workspace."
-      />
+      <PageHeader title="Settings" description="Configure your workspace." />
 
       <Card>
         <CardHeader>

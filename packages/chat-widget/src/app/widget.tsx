@@ -209,7 +209,11 @@ export function Widget({ config }: { config: HelioWidgetConfig }) {
     (localId: string, file: File) => {
       const sess = sessionRef.current;
       if (!sess) return;
-      patchUpload(localId, { status: "uploading", progress: 0, error: undefined });
+      patchUpload(localId, {
+        status: "uploading",
+        progress: 0,
+        error: undefined,
+      });
       const handle = uploadAttachment(config, sess.visitorToken, file, (p) =>
         patchUpload(localId, { progress: p }),
       );
@@ -435,7 +439,10 @@ export function Widget({ config }: { config: HelioWidgetConfig }) {
           </svg>
         )}
         {!open && unread > 0 && (
-          <span className="helio-unread" aria-label={`${unread} unread messages`}>
+          <span
+            className="helio-unread"
+            aria-label={`${unread} unread messages`}
+          >
             {unread > 9 ? "9+" : unread}
           </span>
         )}

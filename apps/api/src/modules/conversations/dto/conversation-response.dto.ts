@@ -1,16 +1,16 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import {
   ConversationChannel,
   ConversationPriority,
   ConversationStatus,
-} from '../../../database/entities';
-import { ContactResponseDto } from '../../contacts/dto/contact-response.dto';
+} from "../../../database/entities";
+import { ContactResponseDto } from "../../contacts/dto/contact-response.dto";
 
 export class ConversationResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   contactId: string;
 
   @ApiProperty()
@@ -31,7 +31,7 @@ export class ConversationResponseDto {
   @ApiProperty({ type: String, isArray: true })
   tags: string[];
 
-  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @ApiPropertyOptional({ format: "uuid", nullable: true })
   assignedToUserId: string | null;
 
   @ApiPropertyOptional({ nullable: true })
@@ -48,7 +48,7 @@ export class ConversationResponseDto {
 }
 
 export class ConversationAssigneeDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   userId: string;
 
   @ApiProperty()
@@ -79,7 +79,7 @@ export class ConversationDetailResponseDto extends ConversationResponseDto {
   @ApiPropertyOptional({ type: ConversationSummaryDto, nullable: true })
   aiSummary: ConversationSummaryDto | null;
 
-  @ApiProperty({ description: 'Total messages in this conversation' })
+  @ApiProperty({ description: "Total messages in this conversation" })
   messagesCount: number;
 }
 

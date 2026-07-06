@@ -8,10 +8,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHelpCenter, useHelpSearch } from "@/features/kb/hooks";
-import {
-  helpUrl,
-  useHelpWorkspace,
-} from "@/features/kb/use-help-workspace";
+import { helpUrl, useHelpWorkspace } from "@/features/kb/use-help-workspace";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 function HelpCenterContent() {

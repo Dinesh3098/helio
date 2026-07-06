@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import {
   IsInt,
   IsOptional,
@@ -8,16 +8,16 @@ import {
   Max,
   MaxLength,
   Min,
-} from 'class-validator';
+} from "class-validator";
 
 export class QueryAuditLogsDto {
-  @ApiPropertyOptional({ example: 'conversation' })
+  @ApiPropertyOptional({ example: "conversation" })
   @IsOptional()
   @IsString()
   @MaxLength(64)
   resourceType?: string;
 
-  @ApiPropertyOptional({ format: 'uuid', description: 'Filter by actor' })
+  @ApiPropertyOptional({ format: "uuid", description: "Filter by actor" })
   @IsOptional()
   @IsUUID()
   actorUserId?: string;
@@ -39,10 +39,10 @@ export class QueryAuditLogsDto {
 }
 
 export class AuditLogResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
-  @ApiPropertyOptional({ nullable: true, description: 'Null = system event' })
+  @ApiPropertyOptional({ nullable: true, description: "Null = system event" })
   actorName: string | null;
 
   @ApiProperty()
@@ -51,7 +51,7 @@ export class AuditLogResponseDto {
   @ApiPropertyOptional({ nullable: true })
   resourceId: string | null;
 
-  @ApiProperty({ example: 'conversation.status_changed' })
+  @ApiProperty({ example: "conversation.status_changed" })
   action: string;
 
   @ApiPropertyOptional({ nullable: true })

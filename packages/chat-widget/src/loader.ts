@@ -83,9 +83,7 @@ function init(options: HelioWidgetConfig): void {
     button.innerHTML = `<span class="spin" role="status" aria-label="Loading chat"></span>`;
 
     const script = document.createElement("script");
-    script.src = loaderSrc
-      ? loaderSrc.replace(/[^/]*$/, APP_FILE)
-      : APP_FILE;
+    script.src = loaderSrc ? loaderSrc.replace(/[^/]*$/, APP_FILE) : APP_FILE;
     script.async = true;
     script.onload = () => {
       if (window.__HELIO_MOUNT__) {

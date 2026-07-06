@@ -4,23 +4,23 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-} from 'typeorm';
+} from "typeorm";
 
 /**
  * Tenant root. Every business resource hangs off a workspace and is
  * deleted with it (ON DELETE CASCADE on the children).
  */
-@Entity('workspaces')
+@Entity("workspaces")
 export class Workspace {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: "varchar", length: 255 })
   name: string;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  @UpdateDateColumn({ name: "updated_at", type: "timestamptz" })
   updatedAt: Date;
 }

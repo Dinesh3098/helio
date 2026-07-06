@@ -1,11 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { AiService } from '../ai/ai.service';
-import { RealtimeEmitterService } from '../../realtime/realtime-emitter.service';
-import { SERVER_EVENTS } from '../../realtime/realtime.events';
-import { ConversationsService } from '../conversations/conversations.service';
-import { MessagesService } from '../messages/messages.service';
-import { WorkspaceMembersService } from '../workspace-members/workspace-members.service';
-import { AutomationAction } from './automation.types';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { AiService } from "../ai/ai.service";
+import { RealtimeEmitterService } from "../../realtime/realtime-emitter.service";
+import { SERVER_EVENTS } from "../../realtime/realtime.events";
+import { ConversationsService } from "../conversations/conversations.service";
+import { MessagesService } from "../messages/messages.service";
+import { WorkspaceMembersService } from "../workspace-members/workspace-members.service";
+import { AutomationAction } from "./automation.types";
 
 /**
  * Executes one action by delegating to the owning service — the executor
@@ -28,7 +28,7 @@ export class AutomationExecutor {
     action: AutomationAction,
   ): Promise<void> {
     switch (action.type) {
-      case 'assign': {
+      case "assign": {
         // The target may have left the workspace since the rule was made.
         const membership = await this.workspaceMembersService.findMembership(
           workspaceId,
@@ -36,7 +36,7 @@ export class AutomationExecutor {
         );
         if (!membership) {
           throw new NotFoundException(
-            'Assignee is no longer a member of this workspace',
+            "Assignee is no longer a member of this workspace",
           );
         }
         await this.conversationsService.systemAssign(
@@ -46,41 +46,41 @@ export class AutomationExecutor {
         );
         return;
       }
-      case 'setPriority':
+      case "setPriority":
         await this.conversationsService.update(workspaceId, conversationId, {
           priority: action.priority,
         });
         return;
-      case 'setStatus':
+      case "setStatus":
         await this.conversationsService.update(workspaceId, conversationId, {
           status: action.status,
         });
         return;
-      case 'aiSummary':
+      case "aiSummary":
         await this.aiService.generateSummary(workspaceId, conversationId);
         return;
-      case 'aiReply': {
+      case "aiReply": {
         const text = await this.aiService.suggestReply(
           workspaceId,
           conversationId,
           // Synthetic author identity for the prompt only.
-          { id: '', name: 'the support team', email: '' },
+          { id: "", name: "the support team", email: "" },
           action.instructions,
         );
         await this.sendReply(workspaceId, conversationId, text);
         return;
       }
-      case 'autoReply':
+      case "autoReply":
         await this.sendReply(workspaceId, conversationId, action.content);
         return;
-      case 'addTag':
+      case "addTag":
         await this.conversationsService.systemTag(
           workspaceId,
           conversationId,
           action.tag,
         );
         return;
-      case 'removeTag':
+      case "removeTag":
         await this.conversationsService.systemTag(
           workspaceId,
           conversationId,

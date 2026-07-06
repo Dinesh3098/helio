@@ -3,15 +3,15 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { WorkspaceMember, WorkspaceMemberRole } from '../../database/entities';
-import { AuditService } from '../audit/audit.service';
-import { UsersService } from '../users/users.service';
-import { InviteMemberDto } from './dto/invite-member.dto';
-import { MemberResponseDto } from './dto/member-response.dto';
-import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { WorkspaceMember, WorkspaceMemberRole } from "../../database/entities";
+import { AuditService } from "../audit/audit.service";
+import { UsersService } from "../users/users.service";
+import { InviteMemberDto } from "./dto/invite-member.dto";
+import { MemberResponseDto } from "./dto/member-response.dto";
+import { UpdateMemberRoleDto } from "./dto/update-member-role.dto";
 
 @Injectable()
 export class WorkspaceMembersService {
@@ -55,7 +55,7 @@ export class WorkspaceMembersService {
     const memberships = await this.membersRepository.find({
       where: { userId },
       relations: { workspace: true },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
     });
     return memberships.map((membership) => ({
       workspaceId: membership.workspaceId,
@@ -77,7 +77,7 @@ export class WorkspaceMembersService {
     const members = await this.membersRepository.find({
       where: { workspaceId },
       relations: { user: true },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
     });
     return members.map((member) => this.toResponse(member));
   }
@@ -90,17 +90,17 @@ export class WorkspaceMembersService {
       dto.role === WorkspaceMemberRole.ADMIN &&
       actor.role !== WorkspaceMemberRole.OWNER
     ) {
-      throw new ForbiddenException('Only the owner can invite admins');
+      throw new ForbiddenException("Only the owner can invite admins");
     }
 
     const user = await this.usersService.findByEmail(dto.email.toLowerCase());
     if (!user) {
-      throw new NotFoundException('No user exists with this email');
+      throw new NotFoundException("No user exists with this email");
     }
 
     const existing = await this.findMembership(actor.workspaceId, user.id);
     if (existing) {
-      throw new ConflictException('User is already a member of this workspace');
+      throw new ConflictException("User is already a member of this workspace");
     }
 
     const member = await this.membersRepository.save(
@@ -114,9 +114,9 @@ export class WorkspaceMembersService {
     member.user = user;
     this.auditService.record({
       workspaceId: actor.workspaceId,
-      resourceType: 'member',
+      resourceType: "member",
       resourceId: member.id,
-      action: 'member.invited',
+      action: "member.invited",
       metadata: { email: user.email, role: dto.role },
     });
     return this.toResponse(member);
@@ -130,17 +130,17 @@ export class WorkspaceMembersService {
     const target = await this.findInWorkspace(actor.workspaceId, memberId);
 
     if (target.role === WorkspaceMemberRole.OWNER) {
-      throw new ForbiddenException('The owner role cannot be changed');
+      throw new ForbiddenException("The owner role cannot be changed");
     }
     if (target.userId === actor.userId) {
-      throw new ForbiddenException('You cannot change your own role');
+      throw new ForbiddenException("You cannot change your own role");
     }
     if (actor.role === WorkspaceMemberRole.ADMIN) {
       if (target.role !== WorkspaceMemberRole.AGENT) {
-        throw new ForbiddenException('Admins can only manage agents');
+        throw new ForbiddenException("Admins can only manage agents");
       }
       if (dto.role === WorkspaceMemberRole.ADMIN) {
-        throw new ForbiddenException('Only the owner can promote to admin');
+        throw new ForbiddenException("Only the owner can promote to admin");
       }
     }
 
@@ -150,10 +150,14 @@ export class WorkspaceMembersService {
       await this.membersRepository.save(target);
       this.auditService.record({
         workspaceId: actor.workspaceId,
-        resourceType: 'member',
+        resourceType: "member",
         resourceId: target.id,
-        action: 'member.role_changed',
-        metadata: { email: target.user.email, from: previousRole, to: dto.role },
+        action: "member.role_changed",
+        metadata: {
+          email: target.user.email,
+          from: previousRole,
+          to: dto.role,
+        },
       });
     }
     return this.toResponse(target);
@@ -163,25 +167,29 @@ export class WorkspaceMembersService {
     const target = await this.findInWorkspace(actor.workspaceId, memberId);
 
     if (target.role === WorkspaceMemberRole.OWNER) {
-      throw new ForbiddenException('The owner cannot be removed');
+      throw new ForbiddenException("The owner cannot be removed");
     }
     if (target.userId === actor.userId) {
-      throw new ForbiddenException('You cannot remove yourself');
+      throw new ForbiddenException("You cannot remove yourself");
     }
     if (
       actor.role === WorkspaceMemberRole.ADMIN &&
       target.role !== WorkspaceMemberRole.AGENT
     ) {
-      throw new ForbiddenException('Admins can only remove agents');
+      throw new ForbiddenException("Admins can only remove agents");
     }
 
-    const removed = { id: target.id, email: target.user.email, role: target.role };
+    const removed = {
+      id: target.id,
+      email: target.user.email,
+      role: target.role,
+    };
     await this.membersRepository.remove(target);
     this.auditService.record({
       workspaceId: actor.workspaceId,
-      resourceType: 'member',
+      resourceType: "member",
       resourceId: removed.id,
-      action: 'member.removed',
+      action: "member.removed",
       metadata: { email: removed.email, role: removed.role },
     });
   }
@@ -199,7 +207,7 @@ export class WorkspaceMembersService {
       relations: { user: true },
     });
     if (!member) {
-      throw new NotFoundException('Member not found in this workspace');
+      throw new NotFoundException("Member not found in this workspace");
     }
     return member;
   }

@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { Conversation } from '../../database/entities';
-import { MessageResponseDto } from '../messages/dto/message-response.dto';
-import { AutomationCondition } from './automation.types';
+import { Injectable } from "@nestjs/common";
+import { Conversation } from "../../database/entities";
+import { MessageResponseDto } from "../messages/dto/message-response.dto";
+import { AutomationCondition } from "./automation.types";
 
 export interface EvaluationContext {
   /** Loaded with its contact relation. */
@@ -18,9 +18,7 @@ export class AutomationEvaluator {
     conditions: AutomationCondition[],
     context: EvaluationContext,
   ): boolean {
-    return conditions.every((condition) =>
-      this.matchesOne(condition, context),
-    );
+    return conditions.every((condition) => this.matchesOne(condition, context));
   }
 
   private matchesOne(
@@ -29,25 +27,25 @@ export class AutomationEvaluator {
   ): boolean {
     const { conversation, message, now } = context;
     switch (condition.type) {
-      case 'channel':
+      case "channel":
         return conversation.channel === condition.value;
-      case 'status':
+      case "status":
         return conversation.status === condition.value;
-      case 'priority':
+      case "priority":
         return conversation.priority === condition.value;
-      case 'emailDomain': {
+      case "emailDomain": {
         const email = conversation.contact?.email?.toLowerCase();
         return !!email && email.endsWith(`@${condition.value}`);
       }
-      case 'messageContains':
+      case "messageContains":
         // Only meaningful on message triggers; never matches otherwise.
         return (
           !!message &&
           message.content.toLowerCase().includes(condition.value.toLowerCase())
         );
-      case 'assignedTo':
+      case "assignedTo":
         return conversation.assignedToUserId === condition.value;
-      case 'timeOfDay': {
+      case "timeOfDay": {
         // UTC by design — workspaces have no timezone setting yet, and a
         // server-local comparison would silently change per deployment.
         const minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
@@ -62,7 +60,7 @@ export class AutomationEvaluator {
   }
 
   private toMinutes(time: string): number {
-    const [hours = 0, minutes = 0] = time.split(':').map(Number);
+    const [hours = 0, minutes = 0] = time.split(":").map(Number);
     return hours * 60 + minutes;
   }
 }

@@ -25,9 +25,7 @@ export function LoginForm() {
     <form onSubmit={onSubmit} className="grid gap-4" noValidate>
       {login.isError && (
         <Alert variant="destructive">
-          <AlertDescription>
-            {getApiErrorMessage(login.error)}
-          </AlertDescription>
+          <AlertDescription>{getApiErrorMessage(login.error)}</AlertDescription>
         </Alert>
       )}
 

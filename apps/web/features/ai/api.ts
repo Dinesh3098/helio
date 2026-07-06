@@ -73,9 +73,6 @@ export const aiApi = {
     ).data,
 
   suggestArticles: async (conversationId: string) =>
-    (
-      await api.post<AiKbSuggestion[]>(
-        `/ai/conversations/${conversationId}/kb`,
-      )
-    ).data,
+    (await api.post<AiKbSuggestion[]>(`/ai/conversations/${conversationId}/kb`))
+      .data,
 };

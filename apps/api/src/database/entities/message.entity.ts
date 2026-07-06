@@ -6,17 +6,17 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
-} from 'typeorm';
-import { Conversation } from './conversation.entity';
+} from "typeorm";
+import { Conversation } from "./conversation.entity";
 
 export enum MessageSenderType {
-  CONTACT = 'CONTACT',
-  USER = 'USER',
+  CONTACT = "CONTACT",
+  USER = "USER",
 }
 
 export enum MessageType {
-  TEXT = 'TEXT',
-  SYSTEM = 'SYSTEM',
+  TEXT = "TEXT",
+  SYSTEM = "SYSTEM",
 }
 
 /**
@@ -56,48 +56,48 @@ export interface MessageMetadata {
  * integrity is enforced at the application layer. It is nullable for
  * SYSTEM messages, which have no sender.
  */
-@Entity('messages')
-@Index(['conversationId', 'createdAt'])
+@Entity("messages")
+@Index(["conversationId", "createdAt"])
 export class Message {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ name: 'conversation_id', type: 'uuid' })
+  @Column({ name: "conversation_id", type: "uuid" })
   conversationId: string;
 
-  @ManyToOne(() => Conversation, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'conversation_id' })
+  @ManyToOne(() => Conversation, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "conversation_id" })
   conversation: Conversation;
 
   @Column({
-    name: 'sender_type',
-    type: 'enum',
+    name: "sender_type",
+    type: "enum",
     enum: MessageSenderType,
-    enumName: 'message_sender_type',
+    enumName: "message_sender_type",
   })
   senderType: MessageSenderType;
 
-  @Column({ name: 'sender_id', type: 'uuid', nullable: true })
+  @Column({ name: "sender_id", type: "uuid", nullable: true })
   senderId: string | null;
 
-  @Column({ type: 'text' })
+  @Column({ type: "text" })
   content: string;
 
   @Column({
-    name: 'message_type',
-    type: 'enum',
+    name: "message_type",
+    type: "enum",
     enum: MessageType,
-    enumName: 'message_type',
+    enumName: "message_type",
     default: MessageType.TEXT,
   })
   messageType: MessageType;
 
-  @Column({ name: 'is_read', type: 'boolean', default: false })
+  @Column({ name: "is_read", type: "boolean", default: false })
   isRead: boolean;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   metadata: MessageMetadata | null;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;
 }

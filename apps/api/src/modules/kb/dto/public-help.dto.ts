@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import {
   IsInt,
   IsOptional,
@@ -8,16 +8,19 @@ import {
   Max,
   MaxLength,
   Min,
-} from 'class-validator';
+} from "class-validator";
 
 export class HelpWorkspaceQueryDto {
-  @ApiProperty({ format: 'uuid', description: 'Workspace whose help center to read' })
+  @ApiProperty({
+    format: "uuid",
+    description: "Workspace whose help center to read",
+  })
   @IsUUID()
   workspaceId: string;
 }
 
 export class HelpSearchQueryDto extends HelpWorkspaceQueryDto {
-  @ApiProperty({ description: 'Search terms' })
+  @ApiProperty({ description: "Search terms" })
   @IsString()
   @MaxLength(255)
   q: string;
@@ -46,7 +49,7 @@ export class PublicArticleSummaryDto {
 }
 
 export class PublicCategoryDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
   @ApiProperty()
@@ -65,7 +68,7 @@ export class PublicHelpCenterDto {
 }
 
 export class PublicArticleDto extends PublicArticleSummaryDto {
-  @ApiProperty({ description: 'Markdown body' })
+  @ApiProperty({ description: "Markdown body" })
   content: string;
 
   @ApiProperty()

@@ -1,43 +1,43 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
-} from '@nestjs/swagger';
-import { CurrentMembership } from '../../common/decorators/current-membership.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../common/guards/roles.guard';
+} from "@nestjs/swagger";
+import { CurrentMembership } from "../../common/decorators/current-membership.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { RolesGuard } from "../../common/guards/roles.guard";
 import {
   AuditLog,
   WorkspaceMember,
   WorkspaceMemberRole,
-} from '../../database/entities';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AuditService } from './audit.service';
+} from "../../database/entities";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { AuditService } from "./audit.service";
 import {
   AuditLogResponseDto,
   PaginatedAuditLogsDto,
   QueryAuditLogsDto,
-} from './dto/audit.dto';
+} from "./dto/audit.dto";
 
-@ApiTags('audit')
+@ApiTags("audit")
 @ApiBearerAuth()
 @ApiHeader({
-  name: 'x-workspace-id',
+  name: "x-workspace-id",
   required: false,
   description:
-    'Workspace to operate on. Optional when the user belongs to exactly one workspace.',
+    "Workspace to operate on. Optional when the user belongs to exactly one workspace.",
 })
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('audit')
+@Controller("audit")
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
-  @Get('logs')
+  @Get("logs")
   @Roles(WorkspaceMemberRole.OWNER, WorkspaceMemberRole.ADMIN)
-  @ApiOperation({ summary: 'Workspace audit trail (newest first)' })
+  @ApiOperation({ summary: "Workspace audit trail (newest first)" })
   @ApiOkResponse({ type: PaginatedAuditLogsDto })
   async list(
     @CurrentMembership() membership: WorkspaceMember,

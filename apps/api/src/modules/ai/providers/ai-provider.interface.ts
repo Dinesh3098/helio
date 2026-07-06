@@ -3,7 +3,7 @@
  * token, never on a vendor SDK/API — swapping Gemini for another provider
  * means adding one class and changing one binding in ai.module.ts.
  */
-export const AI_PROVIDER = Symbol('AI_PROVIDER');
+export const AI_PROVIDER = Symbol("AI_PROVIDER");
 
 export interface AiGenerateRequest {
   prompt: string;
@@ -18,11 +18,7 @@ export interface AiProvider {
   generate(request: AiGenerateRequest): Promise<string>;
 }
 
-export type AiFailureReason =
-  | 'timeout'
-  | 'unavailable'
-  | 'quota'
-  | 'malformed';
+export type AiFailureReason = "timeout" | "unavailable" | "quota" | "malformed";
 
 /** Single failure type the service maps onto HTTP responses. */
 export class AiProviderError extends Error {
@@ -31,6 +27,6 @@ export class AiProviderError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'AiProviderError';
+    this.name = "AiProviderError";
   }
 }

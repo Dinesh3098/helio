@@ -9,10 +9,7 @@ import { Markdown } from "@/components/shared/markdown";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHelpArticle } from "@/features/kb/hooks";
-import {
-  helpUrl,
-  useHelpWorkspace,
-} from "@/features/kb/use-help-workspace";
+import { helpUrl, useHelpWorkspace } from "@/features/kb/use-help-workspace";
 
 function HelpArticleContent({ slug }: { slug: string }) {
   const workspaceId = useHelpWorkspace();

@@ -7,35 +7,35 @@ import {
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import type { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
 import {
   Conversation,
   ConversationSummary,
   HelpArticle,
   Workspace,
-} from '../../database/entities';
-import { QueryMessagesDto } from '../messages/dto/query-messages.dto';
-import { MetricsService } from '../../metrics/metrics.service';
-import { MessagesService } from '../messages/messages.service';
+} from "../../database/entities";
+import { QueryMessagesDto } from "../messages/dto/query-messages.dto";
+import { MetricsService } from "../../metrics/metrics.service";
+import { MessagesService } from "../messages/messages.service";
 import {
   ClassificationResponseDto,
   KbSuggestionDto,
   SummaryResponseDto,
-} from './dto/ai.dto';
-import { classifyPrompt, CLASSIFY_SCHEMA } from './prompts/classify.prompt';
-import { conversationSummaryPrompt } from './prompts/conversation-summary.prompt';
-import { kbSearchPrompt } from './prompts/kb-search.prompt';
-import { rewritePrompt, RewriteStyle } from './prompts/rewrite.prompt';
-import { suggestedReplyPrompt } from './prompts/suggested-reply.prompt';
-import { formatTranscript } from './prompts/transcript';
+} from "./dto/ai.dto";
+import { classifyPrompt, CLASSIFY_SCHEMA } from "./prompts/classify.prompt";
+import { conversationSummaryPrompt } from "./prompts/conversation-summary.prompt";
+import { kbSearchPrompt } from "./prompts/kb-search.prompt";
+import { rewritePrompt, RewriteStyle } from "./prompts/rewrite.prompt";
+import { suggestedReplyPrompt } from "./prompts/suggested-reply.prompt";
+import { formatTranscript } from "./prompts/transcript";
 import {
   AI_PROVIDER,
   AiProviderError,
   type AiProvider,
-} from './providers/ai-provider.interface';
+} from "./providers/ai-provider.interface";
 
 /** Transcript cap: the newest page of messages (backend max page size). */
 const TRANSCRIPT_LIMIT = 100;
@@ -101,7 +101,7 @@ export class AiService {
     const transcript = await this.loadTranscript(workspaceId, conversationId);
     if (!transcript) {
       throw new HttpException(
-        'This conversation has no messages to summarize',
+        "This conversation has no messages to summarize",
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -139,7 +139,7 @@ export class AiService {
     const transcript = await this.loadTranscript(workspaceId, conversationId);
     if (!transcript) {
       throw new HttpException(
-        'This conversation has no messages to reply to',
+        "This conversation has no messages to reply to",
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -151,7 +151,7 @@ export class AiService {
       prompt: suggestedReplyPrompt({
         contactName: conversation.contact.name,
         agentName: agent.name,
-        workspaceName: workspace?.name ?? 'our company',
+        workspaceName: workspace?.name ?? "our company",
         transcript,
         instructions,
       }),
@@ -164,7 +164,7 @@ export class AiService {
   async rewrite(draft: string, style: RewriteStyle): Promise<string> {
     return this.callModel({
       prompt: rewritePrompt({ draft, style }),
-      temperature: style === 'GRAMMAR' ? 0.1 : 0.5,
+      temperature: style === "GRAMMAR" ? 0.1 : 0.5,
     });
   }
 
@@ -178,7 +178,7 @@ export class AiService {
     const transcript = await this.loadTranscript(workspaceId, conversationId);
     if (!transcript) {
       throw new HttpException(
-        'This conversation has no messages to classify',
+        "This conversation has no messages to classify",
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -190,21 +190,21 @@ export class AiService {
     });
 
     const parsed = this.parseJson<Partial<ClassificationResponseDto>>(raw);
-    const priority = (parsed.priority ?? '').toUpperCase();
-    const sentiment = (parsed.sentiment ?? '').toUpperCase();
+    const priority = (parsed.priority ?? "").toUpperCase();
+    const sentiment = (parsed.sentiment ?? "").toUpperCase();
     return {
-      category: parsed.category?.trim() || 'Other',
+      category: parsed.category?.trim() || "Other",
       priority: (CLASSIFY_SCHEMA.priorities as readonly string[]).includes(
         priority,
       )
         ? priority
-        : 'MEDIUM',
+        : "MEDIUM",
       sentiment: (CLASSIFY_SCHEMA.sentiments as readonly string[]).includes(
         sentiment,
       )
         ? sentiment
-        : 'NEUTRAL',
-      intent: parsed.intent?.trim() || 'General inquiry',
+        : "NEUTRAL",
+      intent: parsed.intent?.trim() || "General inquiry",
     };
   }
 
@@ -223,7 +223,7 @@ export class AiService {
       where: { workspaceId, isPublished: true },
       select: { id: true, title: true, slug: true, excerpt: true },
       take: KB_CATALOG_LIMIT,
-      order: { updatedAt: 'DESC' },
+      order: { updatedAt: "DESC" },
     });
     if (articles.length === 0) return [];
 
@@ -237,9 +237,8 @@ export class AiService {
       temperature: 0.1,
     });
 
-    const parsed = this.parseJson<{ articleId?: string; reason?: string }[]>(
-      raw,
-    );
+    const parsed =
+      this.parseJson<{ articleId?: string; reason?: string }[]>(raw);
     if (!Array.isArray(parsed)) return [];
 
     // Only ids that actually exist in this workspace survive — the model
@@ -253,7 +252,7 @@ export class AiService {
           articleId: article.id,
           title: article.title,
           slug: article.slug,
-          reason: item.reason?.trim() || 'Relevant to this conversation',
+          reason: item.reason?.trim() || "Relevant to this conversation",
         });
       }
     }
@@ -271,7 +270,7 @@ export class AiService {
       relations: { contact: true },
     });
     if (!conversation) {
-      throw new NotFoundException('Conversation not found');
+      throw new NotFoundException("Conversation not found");
     }
     return conversation;
   }
@@ -319,26 +318,26 @@ export class AiService {
   }): Promise<string> {
     try {
       const result = await this.provider.generate(request);
-      this.metricsService.recordAi('success');
+      this.metricsService.recordAi("success");
       return result;
     } catch (error) {
-      this.metricsService.recordAi('error');
+      this.metricsService.recordAi("error");
       if (error instanceof AiProviderError) {
         switch (error.reason) {
-          case 'timeout':
+          case "timeout":
             throw new GatewayTimeoutException(error.message);
-          case 'quota':
+          case "quota":
             throw new HttpException(
               error.message,
               HttpStatus.TOO_MANY_REQUESTS,
             );
-          case 'malformed':
+          case "malformed":
             throw new BadGatewayException(error.message);
-          case 'unavailable':
+          case "unavailable":
             throw new ServiceUnavailableException(error.message);
         }
       }
-      throw new ServiceUnavailableException('AI is currently unavailable');
+      throw new ServiceUnavailableException("AI is currently unavailable");
     }
   }
 
@@ -346,10 +345,10 @@ export class AiService {
     try {
       // Models occasionally wrap JSON in markdown fences despite the mime
       // type — strip them before parsing.
-      const cleaned = raw.replace(/^```(?:json)?\s*|\s*```$/g, '');
+      const cleaned = raw.replace(/^```(?:json)?\s*|\s*```$/g, "");
       return JSON.parse(cleaned) as T;
     } catch {
-      throw new BadGatewayException('The AI returned an unexpected response');
+      throw new BadGatewayException("The AI returned an unexpected response");
     }
   }
 }

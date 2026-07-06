@@ -1,15 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AppConfig } from '../../../config/configuration';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { AppConfig } from "../../../config/configuration";
 import {
   AiGenerateRequest,
   AiProvider,
   AiProviderError,
-} from './ai-provider.interface';
+} from "./ai-provider.interface";
 
 // 2.0-flash has zero free-tier quota on this key; 2.5-flash is covered.
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+const GEMINI_MODEL = "gemini-2.5-flash";
+const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const REQUEST_TIMEOUT_MS = 25_000;
 
 interface GeminiResponse {
@@ -32,12 +32,12 @@ export class GeminiProvider implements AiProvider {
   private readonly apiKey: string;
 
   constructor(config: ConfigService<AppConfig, true>) {
-    this.apiKey = config.get('gemini.apiKey', { infer: true });
+    this.apiKey = config.get("gemini.apiKey", { infer: true });
   }
 
   async generate(request: AiGenerateRequest): Promise<string> {
     if (!this.apiKey) {
-      throw new AiProviderError('unavailable', 'AI is not configured');
+      throw new AiProviderError("unavailable", "AI is not configured");
     }
 
     const controller = new AbortController();
@@ -48,58 +48,56 @@ export class GeminiProvider implements AiProvider {
       response = await fetch(
         `${BASE_URL}/${this.model}:generateContent?key=${this.apiKey}`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           signal: controller.signal,
           body: JSON.stringify({
             contents: [{ parts: [{ text: request.prompt }] }],
             generationConfig: {
               temperature: request.temperature ?? 0.4,
-              ...(request.json
-                ? { responseMimeType: 'application/json' }
-                : {}),
+              ...(request.json ? { responseMimeType: "application/json" } : {}),
             },
           }),
         },
       );
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new AiProviderError('timeout', 'The AI request timed out');
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new AiProviderError("timeout", "The AI request timed out");
       }
       throw new AiProviderError(
-        'unavailable',
-        'Could not reach the AI service',
+        "unavailable",
+        "Could not reach the AI service",
       );
     } finally {
       clearTimeout(timer);
     }
 
     if (response.status === 429) {
-      throw new AiProviderError('quota', 'AI quota exceeded — try again soon');
+      throw new AiProviderError("quota", "AI quota exceeded — try again soon");
     }
     if (!response.ok) {
       this.logger.warn(`Gemini responded ${response.status}`);
       throw new AiProviderError(
-        'unavailable',
-        'The AI service is currently unavailable',
+        "unavailable",
+        "The AI service is currently unavailable",
       );
     }
 
-    const body = (await response.json().catch(() => null)) as
-      | GeminiResponse
-      | null;
+    const body = (await response
+      .json()
+      .catch(() => null)) as GeminiResponse | null;
     const text = body?.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text ?? '')
-      .join('')
+      ?.map((part) => part.text ?? "")
+      .join("")
       .trim();
 
     if (!text) {
       this.logger.warn(
-        `Gemini returned no text (finishReason: ${body?.candidates?.[0]?.finishReason ?? 'unknown'})`,
+        `Gemini returned no text (finishReason: ${body?.candidates?.[0]?.finishReason ?? "unknown"})`,
       );
       throw new AiProviderError(
-        'malformed',
-        'The AI returned an unexpected response',
+        "malformed",
+        "The AI returned an unexpected response",
       );
     }
     return text;

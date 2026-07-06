@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Attachment, Conversation } from '../../database/entities';
-import { StorageModule } from '../storage/storage.module';
-import { WorkspaceMembersModule } from '../workspace-members/workspace-members.module';
-import { AttachmentsController } from './attachments.controller';
-import { AttachmentsService } from './attachments.service';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Attachment, Conversation } from "../../database/entities";
+import { StorageModule } from "../storage/storage.module";
+import { WorkspaceMembersModule } from "../workspace-members/workspace-members.module";
+import { AttachmentsController } from "./attachments.controller";
+import { AttachmentsService } from "./attachments.service";
 
 @Module({
   imports: [

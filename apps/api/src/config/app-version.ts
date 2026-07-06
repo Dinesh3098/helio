@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 let cached: string | null = null;
 
@@ -14,11 +14,11 @@ export function appVersion(): string {
   if (cached !== null) return cached;
   try {
     const pkg = JSON.parse(
-      readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf8'),
+      readFileSync(join(__dirname, "..", "..", "package.json"), "utf8"),
     ) as { version?: string };
-    cached = pkg.version ?? '0.0.0';
+    cached = pkg.version ?? "0.0.0";
   } catch {
-    cached = '0.0.0';
+    cached = "0.0.0";
   }
   return cached;
 }
