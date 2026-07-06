@@ -12,6 +12,7 @@ import {
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
 import type { AuthenticatedUser } from '../common/interfaces/authenticated-user.interface';
+import { corsOriginSetting } from '../config/configuration';
 import { AuthService } from '../modules/auth/auth.service';
 import { ConversationsService } from '../modules/conversations/conversations.service';
 import { MessageResponseDto } from '../modules/messages/dto/message-response.dto';
@@ -63,7 +64,10 @@ type SendMessageAck =
  * custom IoAdapter (main.ts) over the existing Upstash connection so
  * room broadcasts fan out across instances. Nothing in this class changes.
  */
-@WebSocketGateway({ cors: { origin: true, credentials: true } })
+// CORS mirrors the HTTP layer: CORS_ORIGINS allowlist, or reflect any
+// origin when unset. Read from process.env because decorators evaluate
+// at import time (see corsOriginSetting).
+@WebSocketGateway({ cors: { origin: corsOriginSetting(), credentials: true } })
 @UseFilters(new WsExceptionsFilter())
 @UsePipes(
   new ValidationPipe({

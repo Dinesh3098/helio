@@ -1,0 +1,118 @@
+# Helio — production deployment.
+#
+#   cp .env.production.example .env   # then fill in the values
+#   docker compose up --build
+#
+# Dashboard: http://localhost:3000   API: http://localhost:4000
+#
+# Startup order: postgres + redis become healthy → api runs TypeORM
+# migrations and boots (aborts if migrations fail) → api becomes healthy
+# → web starts. All services share the private `helio` bridge network
+# (created automatically); only the api and web ports are published.
+
+name: helio
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-helio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-helio}
+      POSTGRES_DB: ${POSTGRES_DB:-helio}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - helio
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - helio
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-helio}:${POSTGRES_PASSWORD:-helio}@postgres:5432/${POSTGRES_DB:-helio}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required — set it in .env (min 32 chars)}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN_DAYS: ${JWT_REFRESH_EXPIRES_IN_DAYS:-30}
+      # Optional providers — leave empty to run with the feature disabled.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      STORAGE_MAX_FILE_SIZE_MB: ${STORAGE_MAX_FILE_SIZE_MB:-10}
+      STORAGE_LOCAL_DIR: storage
+      AWS_REGION: ${AWS_REGION:-}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      # Empty = accept any browser origin (required when the chat widget
+      # is embedded on arbitrary customer sites; safe with Bearer auth).
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      DASHBOARD_URL: ${DASHBOARD_URL:-http://localhost:3000}
+    ports:
+      - "${API_PORT:-4000}:4000"
+    volumes:
+      # Uploads when STORAGE_PROVIDER=local; unused (but harmless) with s3.
+      - api_storage:/app/storage
+    networks:
+      - helio
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Inlined into the browser bundle at build time — must be the URL
+        # the user's browser can reach the API on (not the internal
+        # service name).
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+        NEXT_PUBLIC_DEMO_WORKSPACE_ID: ${NEXT_PUBLIC_DEMO_WORKSPACE_ID:-}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    networks:
+      - helio
+
+volumes:
+  postgres_data:
+  redis_data:
+  api_storage:
+
+networks:
+  helio:
+    driver: bridge

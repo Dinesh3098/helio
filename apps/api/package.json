@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Helio backend API (NestJS)",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",

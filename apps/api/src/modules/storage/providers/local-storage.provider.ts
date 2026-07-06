@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir, unlink } from 'node:fs/promises';
+import { constants, createReadStream, createWriteStream } from 'node:fs';
+import { access, mkdir, unlink } from 'node:fs/promises';
 import { dirname, join, normalize, resolve, sep } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { AppConfig } from '../../../config/configuration';
@@ -76,6 +76,21 @@ export class LocalStorageProvider implements StorageProvider {
       throw new StorageProviderError(
         'unavailable',
         'Storage service temporarily unavailable',
+      );
+    }
+  }
+
+  async checkAvailability(): Promise<void> {
+    try {
+      await mkdir(this.rootDir, { recursive: true });
+      await access(this.rootDir, constants.W_OK);
+    } catch (error) {
+      this.logger.warn(
+        `storage dir not writable: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
+      throw new StorageProviderError(
+        'unavailable',
+        'Local storage directory is not writable',
       );
     }
   }

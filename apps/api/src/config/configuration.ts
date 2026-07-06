@@ -1,6 +1,10 @@
 export interface AppConfig {
   nodeEnv: string;
   port: number;
+  /** Allowed browser origins; empty list = reflect any origin. */
+  corsOrigins: string[];
+  /** Public dashboard URL — informational (startup logs). */
+  dashboardUrl: string;
   database: { url: string };
   redis: { url: string };
   jwt: {
@@ -23,9 +27,29 @@ export interface AppConfig {
   };
 }
 
+/**
+ * Parses CORS_ORIGINS into the value Express/Socket.IO expect: an origin
+ * allowlist, or `true` (reflect any origin) when unset. Reads process.env
+ * directly because the Socket.IO gateway decorator evaluates at import
+ * time, before ConfigModule has loaded .env files — in production the
+ * variable comes from the real environment, so both readers agree.
+ */
+export const parseCorsOrigins = (): string[] =>
+  (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+export const corsOriginSetting = (): true | string[] => {
+  const origins = parseCorsOrigins();
+  return origins.length > 0 ? origins : true;
+};
+
 export default (): AppConfig => ({
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parseInt(process.env.PORT ?? '4000', 10),
+  corsOrigins: parseCorsOrigins(),
+  dashboardUrl: process.env.DASHBOARD_URL ?? '',
   database: { url: process.env.DATABASE_URL ?? '' },
   redis: { url: process.env.REDIS_URL ?? '' },
   jwt: {

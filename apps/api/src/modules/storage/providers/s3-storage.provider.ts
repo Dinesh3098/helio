@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  PutObjectCommand,
   S3Client,
   S3ServiceException,
 } from '@aws-sdk/client-s3';
@@ -115,6 +116,27 @@ export class S3StorageProvider implements StorageProvider {
       );
     } catch (error) {
       throw this.mapError(error, 'delete');
+    }
+  }
+
+  /**
+   * Probes with a tiny PutObject to a fixed sentinel key — the exact
+   * permission uploads need. HeadBucket/HeadObject would be cheaper but
+   * require s3:ListBucket, which object-level IAM policies (like this
+   * deployment's) typically do not grant.
+   */
+  async checkAvailability(): Promise<void> {
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: '.health/probe',
+          Body: 'ok',
+          ContentType: 'text/plain',
+        }),
+      );
+    } catch (error) {
+      throw this.mapError(error, 'health-probe');
     }
   }
 
