@@ -51,11 +51,11 @@ function ThemeToggle() {
 
 /**
  * Standalone sample "customer website" for reviewers — a fictional
- * telescope shop (dark mode is night mode, as an astronomy store should
- * be). Workspace id is resolved in priority order: ?workspace=<id> URL
- * param → env default → last id used in this browser → manual input.
- * When one resolves, the widget loads automatically — reviewers open
- * /demo and just chat.
+ * coffee roaster (a nod to Helio: solstice, sunrise roasts). Workspace
+ * id is resolved in priority order: ?workspace=<id> URL param → env
+ * default → last id used in this browser → manual input. When one
+ * resolves, the widget loads automatically — reviewers open /demo and
+ * just chat.
  */
 function DemoContent() {
   const searchParams = useSearchParams();
@@ -104,16 +104,16 @@ function DemoContent() {
       <header className="border-b border-slate-200 dark:border-slate-800">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <span className="text-lg font-bold tracking-tight">
-            <span aria-hidden className="mr-1.5 text-indigo-500">
-              ✦
+            <span aria-hidden className="mr-1.5 text-amber-500">
+              ✺
             </span>
-            Nightfall Optics
+            Solstice Coffee Co.
           </span>
           <div className="flex items-center gap-6">
             <nav className="hidden gap-6 text-sm text-slate-500 sm:flex dark:text-slate-400">
-              <span>Telescopes</span>
-              <span>Binoculars</span>
-              <span>Star Maps</span>
+              <span>Beans</span>
+              <span>Brew Gear</span>
+              <span>Subscriptions</span>
             </nav>
             <ThemeToggle />
           </div>
@@ -123,7 +123,7 @@ function DemoContent() {
       <main className="mx-auto max-w-5xl px-6">
         <section className="py-20 text-center">
           <h1 className="text-4xl font-bold tracking-tight">
-            The night sky, delivered to your door.
+            Roasted at sunrise, at your door by Friday.
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-slate-500 dark:text-slate-400">
             This is a sample customer website used to demo the embedded Helio
@@ -179,16 +179,16 @@ function DemoContent() {
         <section className="grid gap-6 pb-24 sm:grid-cols-3">
           {[
             [
-              "Star-ready in minutes",
-              "Every scope ships assembled, collimated, and ready to point up.",
+              "Roasted to order",
+              "Beans never sit on a shelf — we roast the morning you order.",
             ],
             [
-              "Cloudy-nights guarantee",
-              "30 nights to fall in love with it — or send it back.",
+              "Pause anytime",
+              "Subscriptions without guilt. Skip, swap, or stop in one tap.",
             ],
             [
-              "Astronomers on call",
-              "Real stargazers on chat, from sunset to sunrise.",
+              "Baristas on chat",
+              "Brew questions answered by real baristas, not bots.",
             ],
           ].map(([title, text]) => (
             <div
