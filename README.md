@@ -8,7 +8,27 @@ The live deployment:
 - Widget demo: https://demo.dineshbhadane.com
 - API: https://api.dineshbhadane.com ([health](https://api.dineshbhadane.com/health))
 
-To run the whole thing locally you only need Docker: copy `.env.production.example` to `.env`, set a `JWT_SECRET`, and run `docker compose up --build`. There are 400 automated tests behind `pnpm test`.
+To run the whole thing locally you only need Docker: copy `.env.production.example` to `.env`, set a `JWT_SECRET`, and run `docker compose up --build`. There are 400 automated tests behind `pnpm test`. If you're reviewing this, [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) walks every feature on the live deployment in about ten minutes.
+
+## A quick look
+
+The customer side — the widget embedded on a site, and an agent's reply arriving in it live:
+
+![Widget chat on the demo site](docs/screenshots/06-widget-receives-reply.png)
+
+The agent side — same conversation in the inbox, with the AI panel open (real Gemini summary, suggested replies, rewrite, KB lookup):
+
+![Inbox with AI panel](docs/screenshots/07-ai-summary.png)
+
+An inbound email threaded into the same inbox:
+
+![Email conversation](docs/screenshots/11-email-conversation.png)
+
+The public help center a workspace gets for its published articles:
+
+![Public help center](docs/screenshots/10-public-help-center.png)
+
+More in [docs/screenshots](docs/screenshots/) — team management, automation rules and run history, audit log, system health, all captured from the live deployment.
 
 ## How it fits together
 
