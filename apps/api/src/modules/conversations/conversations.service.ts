@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import {
+  AutomationTrigger,
   Conversation,
   ConversationAssignment,
   ConversationStatus,
@@ -14,6 +15,7 @@ import {
   WorkspaceMember,
   WorkspaceMemberRole,
 } from '../../database/entities';
+import { ConversationEventsService } from '../../events/conversation-events.service';
 import { RealtimeEmitterService } from '../../realtime/realtime-emitter.service';
 import { SERVER_EVENTS } from '../../realtime/realtime.events';
 import { WorkspaceMembersService } from '../workspace-members/workspace-members.service';
@@ -44,6 +46,7 @@ export class ConversationsService {
     private readonly workspaceMembersService: WorkspaceMembersService,
     private readonly dataSource: DataSource,
     private readonly realtimeEmitter: RealtimeEmitterService,
+    private readonly conversationEvents: ConversationEventsService,
   ) {}
 
   async list(
@@ -150,6 +153,7 @@ export class ConversationsService {
       conversationId,
     );
 
+    const previousStatus = conversation.status;
     let changed = false;
     if (dto.status !== undefined && dto.status !== conversation.status) {
       conversation.status = dto.status;
@@ -162,6 +166,21 @@ export class ConversationsService {
     if (changed) {
       await this.conversationsRepository.save(conversation);
       await this.broadcastUpdated(workspaceId, conversationId);
+      if (conversation.status !== previousStatus) {
+        if (conversation.status === ConversationStatus.RESOLVED) {
+          this.conversationEvents.emit({
+            trigger: AutomationTrigger.CONVERSATION_RESOLVED,
+            workspaceId,
+            conversationId,
+          });
+        } else if (previousStatus === ConversationStatus.RESOLVED) {
+          this.conversationEvents.emit({
+            trigger: AutomationTrigger.CONVERSATION_REOPENED,
+            workspaceId,
+            conversationId,
+          });
+        }
+      }
     }
     return this.toResponse(conversation);
   }
@@ -235,6 +254,60 @@ export class ConversationsService {
     }
 
     return this.toResponse(conversation);
+  }
+
+  /**
+   * Actor-less assignment for the automation engine. RBAC does not apply
+   * (rules are authored by owner/admin); the history row's null
+   * assignedByUserId marks it as system-made.
+   */
+  async systemAssign(
+    workspaceId: string,
+    conversationId: string,
+    userId: string | null,
+  ): Promise<void> {
+    const conversation = await this.findWithContact(
+      workspaceId,
+      conversationId,
+    );
+    if (conversation.assignedToUserId === userId) return;
+
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(ConversationAssignment).save(
+        manager.getRepository(ConversationAssignment).create({
+          conversationId: conversation.id,
+          assignedToUserId: userId,
+          assignedByUserId: null,
+        }),
+      );
+      conversation.assignedToUserId = userId;
+      conversation.assignedAt = userId ? new Date() : null;
+      await manager.getRepository(Conversation).save(conversation);
+    });
+    await this.broadcastUpdated(workspaceId, conversationId);
+  }
+
+  /** Tag add/remove for the automation engine; broadcasts on change. */
+  async systemTag(
+    workspaceId: string,
+    conversationId: string,
+    tag: string,
+    remove = false,
+  ): Promise<void> {
+    const conversation = await this.findWithContact(
+      workspaceId,
+      conversationId,
+    );
+    const tags = new Set(conversation.tags);
+    if (remove) {
+      if (!tags.delete(tag)) return;
+    } else {
+      if (tags.has(tag)) return;
+      tags.add(tag);
+    }
+    conversation.tags = [...tags];
+    await this.conversationsRepository.save(conversation);
+    await this.broadcastUpdated(workspaceId, conversationId);
   }
 
   /**
@@ -325,6 +398,7 @@ export class ConversationsService {
       status: conversation.status,
       priority: conversation.priority,
       subject: conversation.subject,
+      tags: conversation.tags,
       assignedToUserId: conversation.assignedToUserId,
       lastMessagePreview: conversation.lastMessagePreview,
       lastMessageAt: conversation.lastMessageAt,

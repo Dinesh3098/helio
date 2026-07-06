@@ -64,6 +64,7 @@ export interface Conversation {
   status: ConversationStatus;
   priority: ConversationPriority;
   subject: string | null;
+  tags: string[];
   assignedToUserId: string | null;
   lastMessagePreview: string | null;
   lastMessageAt: string | null;
@@ -173,4 +174,56 @@ export interface PublicArticle extends PublicArticleSummary {
   content: string;
   categoryName: string;
   workspaceName: string;
+}
+
+export type AutomationTrigger =
+  | "CONVERSATION_CREATED"
+  | "MESSAGE_RECEIVED"
+  | "MESSAGE_SENT"
+  | "CONVERSATION_RESOLVED"
+  | "CONVERSATION_REOPENED";
+
+export type AutomationCondition =
+  | { type: "channel"; value: ConversationChannel }
+  | { type: "status"; value: ConversationStatus }
+  | { type: "priority"; value: ConversationPriority }
+  | { type: "emailDomain"; value: string }
+  | { type: "messageContains"; value: string }
+  | { type: "assignedTo"; value: string | null }
+  | { type: "timeOfDay"; from: string; to: string };
+
+export type AutomationAction =
+  | { type: "assign"; userId: string }
+  | { type: "setPriority"; priority: ConversationPriority }
+  | { type: "setStatus"; status: ConversationStatus }
+  | { type: "aiSummary" }
+  | { type: "aiReply"; instructions?: string }
+  | { type: "autoReply"; content: string }
+  | { type: "addTag"; tag: string }
+  | { type: "removeTag"; tag: string };
+
+export interface AutomationRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  trigger: AutomationTrigger;
+  conditions: AutomationCondition[];
+  actions: AutomationAction[];
+  createdByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AutomationExecutionStatus = "SUCCESS" | "FAILED";
+
+export interface AutomationExecution {
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  conversationId: string;
+  contactName: string;
+  status: AutomationExecutionStatus;
+  error: string | null;
+  startedAt: string;
+  finishedAt: string | null;
 }

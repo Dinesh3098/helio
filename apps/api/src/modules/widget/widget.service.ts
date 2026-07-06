@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, QueryFailedError, Repository } from 'typeorm';
 import {
+  AutomationTrigger,
   Contact,
   Conversation,
   ConversationChannel,
   ConversationStatus,
   Workspace,
 } from '../../database/entities';
+import { ConversationEventsService } from '../../events/conversation-events.service';
 import { CreateWidgetSessionDto } from './dto/create-widget-session.dto';
 import { WidgetSessionResponseDto } from './dto/widget-session-response.dto';
 import { WidgetAuthService } from './widget-auth.service';
@@ -33,6 +35,7 @@ export class WidgetService {
     @InjectRepository(Conversation)
     private readonly conversationsRepository: Repository<Conversation>,
     private readonly widgetAuthService: WidgetAuthService,
+    private readonly conversationEvents: ConversationEventsService,
   ) {}
 
   async createSession(
@@ -117,7 +120,7 @@ export class WidgetService {
     });
     if (active) return active;
 
-    return this.conversationsRepository.save(
+    const conversation = await this.conversationsRepository.save(
       this.conversationsRepository.create({
         workspaceId: contact.workspaceId,
         contactId: contact.id,
@@ -125,6 +128,12 @@ export class WidgetService {
         status: ConversationStatus.OPEN,
       }),
     );
+    this.conversationEvents.emit({
+      trigger: AutomationTrigger.CONVERSATION_CREATED,
+      workspaceId: contact.workspaceId,
+      conversationId: conversation.id,
+    });
+    return conversation;
   }
 
   private isUniqueViolation(error: unknown): boolean {

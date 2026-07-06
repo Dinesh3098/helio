@@ -1,3 +1,5 @@
+import { AutomationExecution } from './automation-execution.entity';
+import { AutomationRule } from './automation-rule.entity';
 import { Contact } from './contact.entity';
 import { Conversation } from './conversation.entity';
 import { ConversationAssignment } from './conversation-assignment.entity';
@@ -13,6 +15,8 @@ import { UserSession } from './user-session.entity';
 import { Workspace } from './workspace.entity';
 import { WorkspaceMember } from './workspace-member.entity';
 
+export * from './automation-execution.entity';
+export * from './automation-rule.entity';
 export * from './contact.entity';
 export * from './conversation.entity';
 export * from './conversation-assignment.entity';
@@ -33,6 +37,8 @@ export * from './workspace-member.entity';
  * (autoLoadEntities is intentionally false).
  */
 export const entities = [
+  AutomationExecution,
+  AutomationRule,
   Contact,
   Conversation,
   ConversationAssignment,

@@ -14,6 +14,7 @@ import { randomUUID } from 'node:crypto';
 import { Brackets, In, Repository } from 'typeorm';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import {
+  AutomationTrigger,
   Contact,
   Conversation,
   ConversationChannel,
@@ -22,6 +23,7 @@ import {
   EmailThread,
   type MessageMetadata,
 } from '../../database/entities';
+import { ConversationEventsService } from '../../events/conversation-events.service';
 import { RealtimeGateway } from '../../realtime/realtime.gateway';
 import { MessageResponseDto } from '../messages/dto/message-response.dto';
 import { MessagesService } from '../messages/messages.service';
@@ -58,6 +60,7 @@ export class EmailService {
     private readonly conversationsRepository: Repository<Conversation>,
     private readonly messagesService: MessagesService,
     private readonly realtimeGateway: RealtimeGateway,
+    private readonly conversationEvents: ConversationEventsService,
   ) {}
 
   // ---------- Accounts (owner/admin) ----------
@@ -322,6 +325,11 @@ export class EmailService {
           references: dto.references ?? null,
         }),
       );
+      this.conversationEvents.emit({
+        trigger: AutomationTrigger.CONVERSATION_CREATED,
+        workspaceId,
+        conversationId: conversation.id,
+      });
     } else {
       await this.appendToThreadReferences(thread, dto.messageId);
     }
