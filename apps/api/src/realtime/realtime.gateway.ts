@@ -21,11 +21,16 @@ import { WidgetAuthService } from '../modules/widget/widget-auth.service';
 import { WorkspaceMembersService } from '../modules/workspace-members/workspace-members.service';
 import { ConnectionRegistryService } from './connection-registry.service';
 import { RealtimeEmitterService } from './realtime-emitter.service';
-import { ConversationRoomDto, SendMessageWsDto } from './dto/ws-payloads.dto';
+import {
+  ConversationRoomDto,
+  SendMessageWsDto,
+  WorkspaceRoomDto,
+} from './dto/ws-payloads.dto';
 import {
   CLIENT_EVENTS,
   conversationRoom,
   SERVER_EVENTS,
+  workspaceRoom,
 } from './realtime.events';
 import { SocketRateLimiter } from './socket-rate-limiter';
 import { WsExceptionsFilter } from './ws-exceptions.filter';
@@ -143,10 +148,13 @@ export class RealtimeGateway
    * (inbound email webhook, outbound email REST send). Same event and
    * payload the socket path emits — dashboards can't tell the difference.
    */
-  broadcastMessageCreated(message: MessageResponseDto): void {
-    this.server
-      .to(conversationRoom(message.conversationId))
-      .emit(SERVER_EVENTS.messageCreated, message);
+  broadcastMessageCreated(
+    message: MessageResponseDto,
+    workspaceId?: string,
+  ): void {
+    let target = this.server.to(conversationRoom(message.conversationId));
+    if (workspaceId) target = target.to(workspaceRoom(workspaceId));
+    target.emit(SERVER_EVENTS.messageCreated, message);
   }
 
   /** Runs only for sockets the auth middleware admitted. */
@@ -173,6 +181,41 @@ export class RealtimeGateway
         `socket ${client.id} disconnected (visitor contact ${visitor.contactId})`,
       );
     }
+  }
+
+  /**
+   * Dashboard-wide subscription: everything happening in the workspace.
+   * Agents only (visitors are pinned to their single conversation), with
+   * membership re-checked against the database. Joining a workspace
+   * leaves any previously joined one — a dashboard shows one tenant at a
+   * time, and stale rooms would leak cross-workspace events into it.
+   */
+  @SubscribeMessage(CLIENT_EVENTS.joinWorkspace)
+  async joinWorkspace(
+    @ConnectedSocket() client: GatewaySocket,
+    @MessageBody() payload: WorkspaceRoomDto,
+  ): Promise<void> {
+    this.throttle(client, CLIENT_EVENTS.joinWorkspace, 20, 10_000);
+    const user = client.data.user;
+    if (!user) {
+      throw new WsException('Unauthorized');
+    }
+    const membership = await this.workspaceMembersService.findMembership(
+      payload.workspaceId,
+      user.id,
+    );
+    if (!membership) {
+      throw new WsException('You are not a member of this workspace');
+    }
+    for (const room of client.rooms) {
+      if (room.startsWith('workspace:') && room !== workspaceRoom(payload.workspaceId)) {
+        await client.leave(room);
+      }
+    }
+    await client.join(workspaceRoom(payload.workspaceId));
+    client.emit(SERVER_EVENTS.workspaceJoined, {
+      workspaceId: payload.workspaceId,
+    });
   }
 
   @SubscribeMessage(CLIENT_EVENTS.joinConversation)
@@ -219,18 +262,27 @@ export class RealtimeGateway
       const message = client.data.visitor
         ? await this.messagesService.createContactMessage(
             client.data.visitor,
-            { content: payload.content },
+            {
+              content: payload.content ?? '',
+              attachmentIds: payload.attachmentIds,
+            },
           )
         : await this.messagesService.createAgentMessage(
             // authorizeConversation guarantees one principal exists.
             client.data.user as AuthenticatedUser,
             workspaceId,
             payload.conversationId,
-            { content: payload.content },
+            {
+              content: payload.content ?? '',
+              attachmentIds: payload.attachmentIds,
+            },
           );
 
       const room = conversationRoom(payload.conversationId);
-      this.server.to(room).emit(SERVER_EVENTS.messageCreated, message);
+      this.server
+        .to(room)
+        .to(workspaceRoom(workspaceId))
+        .emit(SERVER_EVENTS.messageCreated, message);
       if (!client.rooms.has(room)) {
         // Sender must always receive the event, joined or not.
         client.emit(SERVER_EVENTS.messageCreated, message);

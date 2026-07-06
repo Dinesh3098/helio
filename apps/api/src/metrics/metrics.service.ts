@@ -61,6 +61,42 @@ export class MetricsService {
     registers: [this.registry],
   });
 
+  private readonly attachmentsUploaded = new Counter({
+    name: 'helio_attachments_uploaded_total',
+    help: 'Attachments stored, by provider',
+    labelNames: ['provider'] as const,
+    registers: [this.registry],
+  });
+
+  private readonly attachmentsDeleted = new Counter({
+    name: 'helio_attachments_deleted_total',
+    help: 'Attachments deleted, by provider',
+    labelNames: ['provider'] as const,
+    registers: [this.registry],
+  });
+
+  private readonly attachmentUploadFailures = new Counter({
+    name: 'helio_attachment_upload_failures_total',
+    help: 'Failed attachment uploads, by provider',
+    labelNames: ['provider'] as const,
+    registers: [this.registry],
+  });
+
+  private readonly attachmentUploadDuration = new Histogram({
+    name: 'helio_attachment_upload_duration_seconds',
+    help: 'Attachment upload latency (validation to stored)',
+    labelNames: ['provider'] as const,
+    buckets: [0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30],
+    registers: [this.registry],
+  });
+
+  private readonly attachmentBytesUploaded = new Counter({
+    name: 'helio_attachment_bytes_uploaded_total',
+    help: 'Total bytes stored through attachment uploads',
+    labelNames: ['provider'] as const,
+    registers: [this.registry],
+  });
+
   constructor(
     @InjectRepository(Conversation)
     conversationsRepository: Repository<Conversation>,
@@ -124,6 +160,24 @@ export class MetricsService {
 
   recordWidgetSession(): void {
     this.widgetSessions.inc();
+  }
+
+  recordAttachmentUpload(
+    provider: string,
+    bytes: number,
+    seconds: number,
+  ): void {
+    this.attachmentsUploaded.inc({ provider });
+    this.attachmentBytesUploaded.inc({ provider }, bytes);
+    this.attachmentUploadDuration.observe({ provider }, seconds);
+  }
+
+  recordAttachmentDeleted(provider: string): void {
+    this.attachmentsDeleted.inc({ provider });
+  }
+
+  recordAttachmentUploadFailure(provider: string): void {
+    this.attachmentUploadFailures.inc({ provider });
   }
 
   metrics(): Promise<string> {

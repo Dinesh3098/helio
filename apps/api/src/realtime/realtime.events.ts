@@ -3,6 +3,8 @@
  * keep both in sync.
  */
 export const CLIENT_EVENTS = {
+  /** Agents only: subscribe to every message/update in a workspace. */
+  joinWorkspace: 'joinWorkspace',
   joinConversation: 'joinConversation',
   leaveConversation: 'leaveConversation',
   sendMessage: 'sendMessage',
@@ -13,6 +15,7 @@ export const CLIENT_EVENTS = {
 } as const;
 
 export const SERVER_EVENTS = {
+  workspaceJoined: 'workspaceJoined',
   conversationJoined: 'conversationJoined',
   conversationLeft: 'conversationLeft',
   messageCreated: 'messageCreated',
@@ -25,4 +28,14 @@ export const SERVER_EVENTS = {
 
 export function conversationRoom(conversationId: string): string {
   return `conversation:${conversationId}`;
+}
+
+/**
+ * Workspace-wide fan-out for dashboards. Conversation rooms alone are
+ * not enough for agents: the inbox must update for conversations the
+ * agent has NOT opened (new visitors, other threads). Visitors never
+ * join these.
+ */
+export function workspaceRoom(workspaceId: string): string {
+  return `workspace:${workspaceId}`;
 }

@@ -1,10 +1,13 @@
 "use client";
 
-import { Loader2, SendHorizonal } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Loader2, Paperclip, SendHorizonal } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { UploadTray } from "@/features/attachments/components/upload-tray";
+import { useUploadManager } from "@/features/attachments/use-upload-manager";
 import { getSocket, REALTIME } from "@/lib/realtime/socket";
+import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 import type { ConversationChannel } from "@/types/api";
 import { useSendMessage } from "../hooks";
@@ -23,6 +26,11 @@ export function MessageComposer({
   const content = useUiStore((s) => s.composerDraft);
   const setContent = useUiStore((s) => s.setComposerDraft);
   const send = useSendMessage(conversationId, channel);
+  // Outbound email attachments aren't wired to the provider yet.
+  const attachmentsEnabled = channel === "CHAT";
+  const uploadManager = useUploadManager(conversationId);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragActive, setDragActive] = useState(false);
   const typingRef = useRef<{
     lastSentAt: number;
     idleTimer: ReturnType<typeof setTimeout> | null;
@@ -63,57 +71,135 @@ export function MessageComposer({
 
   const submit = () => {
     const trimmed = content.trim();
-    if (!trimmed || send.isPending) return;
+    if (send.isPending || uploadManager.busy) return;
+    const attachmentIds = uploadManager.readyIds;
+    // Text or files — either alone is a valid message.
+    if (!trimmed && attachmentIds.length === 0) return;
+    const optimisticAttachments = uploadManager.uploads
+      .filter((u) => u.status === "done")
+      .map((u) => ({
+        id: u.attachmentId,
+        filename: u.file.name,
+        mimeType: u.file.type,
+        size: u.file.size,
+        url: null,
+      }));
     stopTyping();
     // Clear immediately for the optimistic flow; restore the draft if the
     // server rejects the message so nothing typed is lost.
     setContent("");
-    send.mutate(trimmed, { onError: () => setContent(trimmed) });
+    uploadManager.clear();
+    send.mutate(
+      { content: trimmed, attachmentIds, optimisticAttachments },
+      { onError: () => setContent(trimmed) },
+    );
   };
 
   return (
-    <form
-      className="flex items-end gap-2 border-t p-4"
-      onSubmit={(e) => {
+    <div
+      className={cn(
+        "border-t transition-colors",
+        dragActive && "bg-primary/5 outline-primary/40 outline-2 -outline-offset-2 outline-dashed",
+      )}
+      onDragOver={(e) => {
+        if (!attachmentsEnabled) return;
         e.preventDefault();
-        submit();
+        setDragActive(true);
+      }}
+      onDragLeave={() => setDragActive(false)}
+      onDrop={(e) => {
+        if (!attachmentsEnabled) return;
+        e.preventDefault();
+        setDragActive(false);
+        if (e.dataTransfer.files.length) {
+          uploadManager.addFiles(e.dataTransfer.files);
+        }
       }}
     >
-      <Textarea
-        value={content}
-        onChange={(e) => {
-          setContent(e.target.value);
-          if (e.target.value) emitTyping();
-          else stopTyping();
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            submit();
-          }
-        }}
-        placeholder={
-          channel === "EMAIL"
-            ? "Write an email reply… (Enter to send, Shift+Enter for a new line)"
-            : "Write a reply… (Enter to send, Shift+Enter for a new line)"
-        }
-        aria-label="Message"
-        rows={2}
-        maxLength={10_000}
-        className="max-h-40 resize-none"
+      <UploadTray
+        uploads={uploadManager.uploads}
+        onRemove={uploadManager.remove}
+        onRetry={uploadManager.retry}
       />
-      <Button
-        type="submit"
-        size="icon"
-        aria-label="Send message"
-        disabled={!content.trim() || send.isPending}
+
+      <form
+        className="flex items-end gap-2 p-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
       >
-        {send.isPending ? (
-          <Loader2 className="animate-spin" aria-hidden />
-        ) : (
-          <SendHorizonal className="size-4" aria-hidden />
+        {attachmentsEnabled && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,.doc,.docx,.txt,.csv"
+              onChange={(e) => {
+                if (e.target.files?.length) {
+                  uploadManager.addFiles(e.target.files);
+                }
+                e.target.value = "";
+              }}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Attach files"
+              title="Attach files (or drag and drop)"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="size-4" aria-hidden />
+            </Button>
+          </>
         )}
-      </Button>
-    </form>
+
+        <Textarea
+          value={content}
+          onChange={(e) => {
+            setContent(e.target.value);
+            if (e.target.value) emitTyping();
+            else stopTyping();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          placeholder={
+            channel === "EMAIL"
+              ? "Write an email reply… (Enter to send, Shift+Enter for a new line)"
+              : "Write a reply… (Enter to send, Shift+Enter for a new line)"
+          }
+          aria-label="Message"
+          rows={2}
+          maxLength={10_000}
+          className="max-h-40 resize-none"
+        />
+        <Button
+          type="submit"
+          size="icon"
+          aria-label="Send message"
+          title={
+            uploadManager.busy ? "Waiting for uploads to finish" : undefined
+          }
+          disabled={
+            (!content.trim() && uploadManager.readyIds.length === 0) ||
+            send.isPending ||
+            uploadManager.busy
+          }
+        >
+          {send.isPending || uploadManager.busy ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <SendHorizonal className="size-4" aria-hidden />
+          )}
+        </Button>
+      </form>
+    </div>
   );
 }

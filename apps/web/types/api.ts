@@ -84,6 +84,8 @@ export type MessageSenderType = "USER" | "CONTACT";
 export type MessageType = "TEXT" | "SYSTEM";
 
 export interface MessageAttachment {
+  /** Attachment row id — present for stored files, absent for email-only metadata. */
+  id?: string;
   filename: string;
   mimeType: string;
   size: number;
@@ -92,6 +94,8 @@ export interface MessageAttachment {
 
 /** Channel extras — email envelope; null for chat messages. */
 export interface MessageMetadata {
+  /** Files uploaded and sent with this (chat) message. */
+  attachments?: MessageAttachment[];
   email?: {
     subject: string | null;
     from: string;
@@ -174,6 +178,16 @@ export interface PublicArticle extends PublicArticleSummary {
   content: string;
   categoryName: string;
   workspaceName: string;
+}
+
+export interface UploadedAttachment {
+  id: string;
+  conversationId: string | null;
+  messageId: string | null;
+  filename: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
 }
 
 export interface AuditLogEntry {

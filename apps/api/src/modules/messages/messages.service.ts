@@ -19,6 +19,7 @@ import {
   type MessageMetadata,
 } from '../../database/entities';
 import { ConversationEventsService } from '../../events/conversation-events.service';
+import { AttachmentsService } from '../attachments/attachments.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import {
   MessageResponseDto,
@@ -45,6 +46,7 @@ export class MessagesService {
     private readonly usersRepository: Repository<User>,
     private readonly dataSource: DataSource,
     private readonly conversationEvents: ConversationEventsService,
+    private readonly attachmentsService: AttachmentsService,
   ) {}
 
   /**
@@ -109,8 +111,9 @@ export class MessagesService {
     const message = await this.append(conversation, {
       senderType: MessageSenderType.USER,
       senderId: user.id,
-      content: dto.content,
+      content: dto.content ?? '',
       metadata: metadata ?? null,
+      attachmentIds: dto.attachmentIds,
     });
     const response = this.toResponse(message, user.name);
     this.conversationEvents.emit({
@@ -167,8 +170,9 @@ export class MessagesService {
     const message = await this.append(conversation, {
       senderType: MessageSenderType.CONTACT,
       senderId: visitor.contactId,
-      content: dto.content,
+      content: dto.content ?? '',
       metadata: metadata ?? null,
+      attachmentIds: dto.attachmentIds,
     });
     const response = this.toResponse(message, conversation.contact.name);
     this.conversationEvents.emit({
@@ -193,12 +197,17 @@ export class MessagesService {
       senderId: string | null;
       content: string;
       metadata?: MessageMetadata | null;
+      attachmentIds?: string[];
     },
   ): Promise<Message> {
     if (conversation.status === ConversationStatus.RESOLVED) {
       throw new ConflictException(
         'Resolved conversations cannot receive new messages. Reopen the conversation first.',
       );
+    }
+    // Text OR files — a message must carry at least one of them.
+    if (!input.content && !input.attachmentIds?.length) {
+      throw new BadRequestException('Message needs text or an attachment');
     }
 
     return this.dataSource.transaction(async (manager) => {
@@ -213,9 +222,39 @@ export class MessagesService {
         }),
       );
 
+      // Attachments link atomically with the message: a failed link
+      // (foreign id, already sent) rolls the whole send back.
+      let linkedFilenames: string[] = [];
+      if (input.attachmentIds?.length) {
+        const attachments = await this.attachmentsService.linkToMessage(
+          conversation.workspaceId,
+          conversation.id,
+          message.id,
+          input.attachmentIds,
+          manager,
+        );
+        linkedFilenames = attachments.map((a) => a.filename);
+        message.metadata = {
+          ...(message.metadata ?? {}),
+          attachments: attachments.map((attachment) => ({
+            id: attachment.id,
+            filename: attachment.filename,
+            mimeType: attachment.mimeType,
+            size: Number(attachment.size),
+            url: null,
+          })),
+        };
+        await manager
+          .getRepository(Message)
+          .update(message.id, { metadata: message.metadata });
+      }
+
       // Activity in a snoozed conversation pulls it back into the inbox.
+      const preview = input.content
+        ? this.toPreview(input.content)
+        : `📎 ${linkedFilenames[0] ?? 'Attachment'}${linkedFilenames.length > 1 ? ` +${linkedFilenames.length - 1}` : ''}`;
       await manager.getRepository(Conversation).update(conversation.id, {
-        lastMessagePreview: this.toPreview(input.content),
+        lastMessagePreview: preview,
         lastMessageAt: message.createdAt,
         ...(conversation.status === ConversationStatus.SNOOZED
           ? { status: ConversationStatus.OPEN }

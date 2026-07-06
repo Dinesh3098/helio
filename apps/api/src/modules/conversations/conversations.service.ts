@@ -446,6 +446,7 @@ export class ConversationsService {
       conversationId,
       SERVER_EVENTS.conversationUpdated,
       payload,
+      workspaceId,
     );
   }
 

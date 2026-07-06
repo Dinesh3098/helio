@@ -375,3 +375,119 @@
     transform: rotate(360deg);
   }
 }
+
+
+/* ---------- Attachments ---------- */
+
+.helio-composer-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.helio-attach {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--helio-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.helio-attach:hover { color: var(--helio-text); background: var(--helio-bubble); }
+.helio-attach svg { width: 18px; height: 18px; }
+
+.helio-upload-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px 0;
+}
+.helio-upload-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  border: 1px solid var(--helio-border);
+  border-radius: 8px;
+  background: var(--helio-bubble);
+  padding: 4px 6px;
+  font-size: 12px;
+  max-width: 100%;
+}
+.helio-upload-chip--error { border-color: #ef4444; }
+.helio-upload-progress {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgba(79, 70, 229, 0.15);
+  transition: width 0.2s ease;
+}
+.helio-upload-name {
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+.helio-upload-name small { color: var(--helio-muted); }
+.helio-upload-chip--error .helio-upload-name small { color: #ef4444; }
+.helio-upload-action {
+  position: relative;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--helio-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px;
+}
+.helio-upload-action:hover { color: var(--helio-text); }
+
+.helio-att-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.helio-att-image {
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 220px;
+}
+.helio-att-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+.helio-att-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.helio-bubble--mine .helio-att-file {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.helio-att-file:disabled { cursor: default; opacity: 0.75; }
+.helio-att-file small { opacity: 0.7; }

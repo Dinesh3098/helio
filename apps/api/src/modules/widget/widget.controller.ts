@@ -1,20 +1,33 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Post,
   Query,
+  Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { tmpdir } from 'node:os';
+import { AttachmentsService } from '../attachments/attachments.service';
+import { AttachmentResponseDto } from '../attachments/dto/attachment.dto';
 import { CreateMessageDto } from '../messages/dto/create-message.dto';
 import {
   MessageResponseDto,
@@ -40,6 +53,7 @@ export class WidgetController {
   constructor(
     private readonly widgetService: WidgetService,
     private readonly messagesService: MessagesService,
+    private readonly attachmentsService: AttachmentsService,
   ) {}
 
   @Post('session')
@@ -72,6 +86,78 @@ export class WidgetController {
       visitor.conversationId,
       query,
     );
+  }
+
+  @Post('attachments')
+  @UseGuards(WidgetAuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(
+    FileInterceptor('file', {
+      // Disk storage — see AttachmentsController; memory is never used.
+      dest: tmpdir(),
+      limits: { fileSize: 100 * 1024 * 1024, files: 1 },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiOperation({
+    summary: "Upload a file into the visitor's conversation (system upload)",
+  })
+  @ApiCreatedResponse({ type: AttachmentResponseDto })
+  uploadAttachment(
+    @CurrentVisitor() visitor: VisitorPrincipal,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ): Promise<AttachmentResponseDto> {
+    if (!file) {
+      throw new BadRequestException('Send the file as multipart field "file"');
+    }
+    // Scope is pinned by the token — visitors cannot pick a conversation.
+    return this.attachmentsService.upload({
+      workspaceId: visitor.workspaceId,
+      uploadedByUserId: null,
+      conversationId: visitor.conversationId,
+      tempPath: file.path,
+      originalFilename: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+    });
+  }
+
+  @Get('attachments/:id/download')
+  @UseGuards(WidgetAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Download an attachment from the visitor's own conversation",
+  })
+  async downloadAttachment(
+    @CurrentVisitor() visitor: VisitorPrincipal,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res() response: Response,
+  ): Promise<void> {
+    const { attachment, download } = await this.attachmentsService.download(
+      visitor.workspaceId,
+      id,
+    );
+    // Visitors may only reach files in their own pinned conversation.
+    if (attachment.conversationId !== visitor.conversationId) {
+      throw new BadRequestException('Attachment not found');
+    }
+    if (download.kind === 'url') {
+      response.redirect(HttpStatus.FOUND, download.url);
+      return;
+    }
+    response.setHeader('Content-Type', attachment.mimeType);
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${attachment.filename}"`,
+    );
+    download.stream.pipe(response);
   }
 
   @Post('messages')

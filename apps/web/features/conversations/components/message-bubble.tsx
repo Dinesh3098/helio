@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { Paperclip } from "lucide-react";
 import { InitialsAvatar } from "@/components/shared/initials-avatar";
+import { AttachmentView } from "@/features/attachments/components/attachment-view";
 import { cn } from "@/lib/utils";
 import type { Message, MessageAttachment } from "@/types/api";
 import { isOptimistic } from "../hooks";
@@ -79,6 +80,18 @@ export function MessageBubble({ message }: { message: Message }) {
             </p>
           )}
           {message.content}
+          {message.metadata?.attachments &&
+            message.metadata.attachments.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {message.metadata.attachments.map((attachment) => (
+                  <AttachmentView
+                    key={attachment.id ?? attachment.filename}
+                    attachment={attachment}
+                    inverted={isAgent}
+                  />
+                ))}
+              </div>
+            )}
           {email && email.attachments.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {email.attachments.map((attachment) => (

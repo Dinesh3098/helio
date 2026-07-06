@@ -137,16 +137,18 @@ export function applyConversationUpdate(
 export function applyMessageToConversationCaches(
   queryClient: QueryClient,
   message: Message,
-): void {
+): boolean {
   const preview = message.content
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, PREVIEW_LENGTH);
 
   let statusFlipped = false;
+  let found = false;
 
   const bump = <T extends Conversation>(conversation: T): T => {
     if (conversation.id !== message.conversationId) return conversation;
+    found = true;
     if (conversation.status === "SNOOZED") statusFlipped = true;
     return {
       ...conversation,
@@ -171,4 +173,7 @@ export function applyMessageToConversationCaches(
   if (statusFlipped) {
     invalidateConversationLists(queryClient);
   }
+  // False = the conversation isn't in any cached page (brand-new visitor
+  // or beyond page 1) — the caller refetches lists so it appears.
+  return found;
 }

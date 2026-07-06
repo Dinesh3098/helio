@@ -1,3 +1,4 @@
+import { Attachment } from './attachment.entity';
 import { AuditLog } from './audit-log.entity';
 import { AutomationExecution } from './automation-execution.entity';
 import { AutomationRule } from './automation-rule.entity';
@@ -16,6 +17,7 @@ import { UserSession } from './user-session.entity';
 import { Workspace } from './workspace.entity';
 import { WorkspaceMember } from './workspace-member.entity';
 
+export * from './attachment.entity';
 export * from './audit-log.entity';
 export * from './automation-execution.entity';
 export * from './automation-rule.entity';
@@ -39,6 +41,7 @@ export * from './workspace-member.entity';
  * (autoLoadEntities is intentionally false).
  */
 export const entities = [
+  Attachment,
   AuditLog,
   AutomationExecution,
   AutomationRule,

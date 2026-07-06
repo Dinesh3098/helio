@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import type { Socket } from "socket.io-client";
 import type { HelioWidgetConfig } from "../shared/config";
-import { createSession, fetchMessages, sendMessageRest } from "./api";
+import {
+  createSession,
+  fetchMessages,
+  sendMessageRest,
+  uploadAttachment,
+  type UploadHandle,
+} from "./api";
 import { Panel } from "./components/panel";
 import {
   createSocket,
@@ -11,6 +17,17 @@ import {
 } from "./realtime";
 import { getOrCreateVisitorId } from "./storage";
 import type { WidgetMessage, WidgetSession } from "./types";
+
+export interface WidgetUpload {
+  localId: string;
+  filename: string;
+  size: number;
+  progress: number;
+  status: "uploading" | "done" | "error";
+  error?: string;
+  attachmentId?: string;
+  file: File;
+}
 
 type BootStatus = "loading" | "ready" | "error";
 
@@ -33,6 +50,8 @@ export function Widget({ config }: { config: HelioWidgetConfig }) {
   const [unread, setUnread] = useState(0);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [uploads, setUploads] = useState<WidgetUpload[]>([]);
+  const uploadHandlesRef = useRef(new Map<string, UploadHandle>());
 
   const socketRef = useRef<Socket | null>(null);
   const connectedOnceRef = useRef(false);
@@ -158,20 +177,115 @@ export function Widget({ config }: { config: HelioWidgetConfig }) {
   }, [config, connectSocket]);
 
   const deliver = useCallback(
-    (sess: WidgetSession, content: string): Promise<WidgetMessage> => {
+    (
+      sess: WidgetSession,
+      content: string,
+      attachmentIds?: string[],
+    ): Promise<WidgetMessage> => {
       const socket = socketRef.current;
       if (socket?.connected) {
-        return sendViaSocket(socket, sess.conversation.id, content);
+        return sendViaSocket(
+          socket,
+          sess.conversation.id,
+          content,
+          attachmentIds,
+        );
       }
-      return sendMessageRest(config, sess.visitorToken, content);
+      return sendMessageRest(config, sess.visitorToken, content, attachmentIds);
     },
     [config],
+  );
+
+  const patchUpload = useCallback(
+    (localId: string, changes: Partial<WidgetUpload>) => {
+      setUploads((current) =>
+        current.map((u) => (u.localId === localId ? { ...u, ...changes } : u)),
+      );
+    },
+    [],
+  );
+
+  const startUpload = useCallback(
+    (localId: string, file: File) => {
+      const sess = sessionRef.current;
+      if (!sess) return;
+      patchUpload(localId, { status: "uploading", progress: 0, error: undefined });
+      const handle = uploadAttachment(config, sess.visitorToken, file, (p) =>
+        patchUpload(localId, { progress: p }),
+      );
+      uploadHandlesRef.current.set(localId, handle);
+      handle.promise
+        .then((attachment) =>
+          patchUpload(localId, {
+            status: "done",
+            progress: 1,
+            attachmentId: attachment.id,
+          }),
+        )
+        .catch((error: Error) => {
+          if (error.message === "aborted") return;
+          patchUpload(localId, { status: "error", error: error.message });
+        })
+        .finally(() => uploadHandlesRef.current.delete(localId));
+    },
+    [config, patchUpload],
+  );
+
+  const addFiles = useCallback(
+    (files: FileList) => {
+      for (const file of Array.from(files)) {
+        const localId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        setUploads((current) => [
+          ...current,
+          {
+            localId,
+            filename: file.name,
+            size: file.size,
+            progress: 0,
+            status: "uploading",
+            file,
+          },
+        ]);
+        startUpload(localId, file);
+      }
+    },
+    [startUpload],
+  );
+
+  const removeUpload = useCallback((localId: string) => {
+    uploadHandlesRef.current.get(localId)?.abort();
+    uploadHandlesRef.current.delete(localId);
+    setUploads((current) => current.filter((u) => u.localId !== localId));
+  }, []);
+
+  const retryUpload = useCallback(
+    (localId: string) => {
+      const target = uploads.find((u) => u.localId === localId);
+      if (target?.status === "error") startUpload(localId, target.file);
+    },
+    [startUpload, uploads],
   );
 
   const send = useCallback(
     async (content: string) => {
       const sess = sessionRef.current;
       if (!sess || sending) return;
+      if (uploads.some((u) => u.status === "uploading")) return;
+      const attachmentIds = uploads
+        .filter((u) => u.status === "done" && u.attachmentId)
+        .map((u) => u.attachmentId as string);
+      // Text or files — either alone is a valid message.
+      if (!content && attachmentIds.length === 0) return;
+      const attachmentSummaries = uploads
+        .filter((u) => u.status === "done")
+        .map((u) => ({
+          id: u.attachmentId,
+          filename: u.filename,
+          mimeType: u.file.type,
+          size: u.size,
+          url: null,
+        }));
+      setUploads([]);
 
       const local: WidgetMessage = {
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -181,6 +295,10 @@ export function Widget({ config }: { config: HelioWidgetConfig }) {
         senderName: sess.contact.name,
         content,
         messageType: "TEXT",
+        metadata:
+          attachmentSummaries.length > 0
+            ? { attachments: attachmentSummaries }
+            : null,
         createdAt: new Date().toISOString(),
         pending: true,
       };
@@ -188,7 +306,7 @@ export function Widget({ config }: { config: HelioWidgetConfig }) {
       setSending(true);
 
       try {
-        const message = await deliver(sess, content);
+        const message = await deliver(sess, content, attachmentIds);
         upsertMessage(message, local.id);
       } catch (error) {
         const text = error instanceof Error ? error.message : "";
@@ -216,7 +334,7 @@ export function Widget({ config }: { config: HelioWidgetConfig }) {
         setSending(false);
       }
     },
-    [deliver, refreshSession, sending, upsertMessage],
+    [deliver, refreshSession, sending, uploads, upsertMessage],
   );
 
   const retryMessage = useCallback(
@@ -275,6 +393,12 @@ export function Widget({ config }: { config: HelioWidgetConfig }) {
         loadingOlder={loadingOlder}
         draft={draft}
         sending={sending}
+        uploads={uploads}
+        onAddFiles={addFiles}
+        onRemoveUpload={removeUpload}
+        onRetryUpload={retryUpload}
+        session={session}
+        config={config}
         onDraftChange={setDraft}
         onSend={(content) => void send(content)}
         onRetryBoot={() => void boot()}

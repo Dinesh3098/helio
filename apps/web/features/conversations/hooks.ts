@@ -23,6 +23,7 @@ import type {
   ConversationPriority,
   ConversationStatus,
   Message,
+  MessageAttachment,
   MessagesPage,
 } from "@/types/api";
 import {
@@ -128,9 +129,14 @@ export function useSendMessage(
     // email REST endpoint (the backend broadcasts to the room for other
     // agents). Chat: socket first — the gateway persists via the same
     // MessagesService and broadcasts; REST is the offline fallback.
-    mutationFn: async (content: string) => {
+    mutationFn: async (input: {
+      content: string;
+      attachmentIds?: string[];
+      /** Display summaries for the optimistic bubble only. */
+      optimisticAttachments?: MessageAttachment[];
+    }) => {
       if (channel === "EMAIL") {
-        return emailApi.sendReply({ conversationId, content });
+        return emailApi.sendReply({ conversationId, content: input.content });
       }
       const socket = getSocket();
       if (socket.connected) {
@@ -138,15 +144,20 @@ export function useSendMessage(
           .timeout(8000)
           .emitWithAck(REALTIME.sendMessage, {
             conversationId,
-            content,
+            content: input.content,
+            attachmentIds: input.attachmentIds,
           })) as SendMessageAck;
         if ("error" in ack) throw new Error(ack.error);
         return ack.message;
       }
-      return messagesApi.send({ conversationId, content });
+      return messagesApi.send({
+        conversationId,
+        content: input.content,
+        attachmentIds: input.attachmentIds,
+      });
     },
 
-    onMutate: async (content) => {
+    onMutate: async ({ content, optimisticAttachments }) => {
       await queryClient.cancelQueries({ queryKey: messagesKey });
       const previous = queryClient.getQueryData<MessagesData>(messagesKey);
 
@@ -158,7 +169,9 @@ export function useSendMessage(
         senderName: me?.name ?? null,
         content,
         messageType: "TEXT",
-        metadata: null,
+        metadata: optimisticAttachments?.length
+          ? { attachments: optimisticAttachments }
+          : null,
         createdAt: new Date().toISOString(),
       };
 

@@ -5,6 +5,8 @@ import type { Message } from "@/types/api";
 
 /** Wire protocol — mirror of apps/api/src/realtime/realtime.events.ts. */
 export const REALTIME = {
+  joinWorkspace: "joinWorkspace",
+  workspaceJoined: "workspaceJoined",
   joinConversation: "joinConversation",
   leaveConversation: "leaveConversation",
   sendMessage: "sendMessage",

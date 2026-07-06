@@ -10,35 +10,91 @@ import {
   type TypingEvent,
 } from "@/lib/realtime/socket";
 import { useUiStore } from "@/stores/ui-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import type { Conversation, Message } from "@/types/api";
 import {
   appendMessageToCache,
   applyConversationUpdate,
   applyMessageToConversationCaches,
+  invalidateConversationLists,
   type ConversationAssignee,
 } from "./cache";
 
 /**
- * Owns the socket connection for the session. Mounted once in the
- * dashboard layout, after authentication resolves.
+ * Owns the socket connection for the session AND the workspace-wide
+ * event handlers. Mounted once in the dashboard layout. Joining the
+ * workspace room is what makes the inbox live for conversations the
+ * agent has NOT opened — new visitors, other threads, email arrivals.
+ * All message/update cache work lives here (one listener, no double
+ * counting); useConversationRoom only manages the per-conversation room
+ * and typing indicators.
  */
 export function useRealtimeConnection(userId: string | undefined): void {
+  const queryClient = useQueryClient();
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+
   useEffect(() => {
-    if (!userId) return;
-    connectSocket();
-    return () => disconnectSocket();
-  }, [userId]);
+    if (!userId || !activeWorkspaceId) return;
+    const socket = connectSocket();
+
+    const joinWorkspace = () =>
+      socket.emit(REALTIME.joinWorkspace, {
+        workspaceId: activeWorkspaceId,
+      });
+    if (socket.connected) joinWorkspace();
+    // Re-join after every reconnect.
+    socket.on("connect", joinWorkspace);
+
+    const onMessageCreated = (message: Message) => {
+      const found = applyMessageToConversationCaches(queryClient, message);
+      if (!found) {
+        // Not in any cached list page — a new conversation. Refetch so it
+        // appears at the top of the inbox.
+        invalidateConversationLists(queryClient);
+      }
+      // AI outputs describe the transcript — stale once messages arrive.
+      void queryClient.invalidateQueries({
+        queryKey: ["ai", message.conversationId],
+      });
+
+      const { selectedConversationId, incrementUnread } =
+        useUiStore.getState();
+      if (message.conversationId === selectedConversationId) {
+        appendMessageToCache(queryClient, message);
+      } else if (message.senderType === "CONTACT") {
+        // Badge only customer messages — own/automation replies in other
+        // tabs shouldn't demand attention.
+        incrementUnread(message.conversationId);
+      }
+    };
+
+    const onConversationUpdated = (
+      payload: Conversation & { assignee: ConversationAssignee | null },
+    ) => {
+      applyConversationUpdate(queryClient, payload, payload.assignee);
+    };
+
+    socket.on(REALTIME.messageCreated, onMessageCreated);
+    socket.on(REALTIME.conversationUpdated, onConversationUpdated);
+
+    return () => {
+      socket.off("connect", joinWorkspace);
+      socket.off(REALTIME.messageCreated, onMessageCreated);
+      socket.off(REALTIME.conversationUpdated, onConversationUpdated);
+      disconnectSocket();
+    };
+  }, [userId, activeWorkspaceId, queryClient]);
 }
 
 /**
- * Joins the conversation's room while mounted (rejoining after every
- * reconnect), leaves on close, and folds incoming events into the React
- * Query caches — no refetching. Returns who is currently typing.
+ * Joins the conversation's room while it is open (needed for typing
+ * indicators and so visitor-side broadcasts reach this viewer even
+ * without the workspace room), re-joins after reconnects, and reports
+ * who is typing. Message cache updates happen in useRealtimeConnection.
  */
 export function useConversationRoom(conversationId: string | null): {
   typingNames: string[];
 } {
-  const queryClient = useQueryClient();
   const [typingUsers, setTypingUsers] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -59,20 +115,10 @@ export function useConversationRoom(conversationId: string | null): {
         return next;
       });
 
+    // A message from someone ends their typing indicator.
     const onMessageCreated = (message: Message) => {
-      applyMessageToConversationCaches(queryClient, message);
-      // AI outputs (summary/classification/KB) describe the transcript —
-      // a new message makes them refetch-on-demand stale.
-      void queryClient.invalidateQueries({
-        queryKey: ["ai", message.conversationId],
-      });
-      if (message.conversationId === conversationId) {
-        appendMessageToCache(queryClient, message);
-        if (message.senderId) removeTyping(message.senderId);
-      } else {
-        // Not the open thread: preview/timestamps were updated above;
-        // surface it as an unread badge only.
-        useUiStore.getState().incrementUnread(message.conversationId);
+      if (message.conversationId === conversationId && message.senderId) {
+        removeTyping(message.senderId);
       }
     };
 
@@ -86,30 +132,20 @@ export function useConversationRoom(conversationId: string | null): {
       removeTyping(event.userId);
     };
 
-    // Another agent changed status/priority/assignee — fold the fresh
-    // conversation into caches so this dashboard reflects it instantly.
-    const onConversationUpdated = (
-      payload: Conversation & { assignee: ConversationAssignee | null },
-    ) => {
-      applyConversationUpdate(queryClient, payload, payload.assignee);
-    };
-
     socket.on(REALTIME.messageCreated, onMessageCreated);
-    socket.on(REALTIME.conversationUpdated, onConversationUpdated);
     socket.on(REALTIME.typingStarted, onTypingStarted);
     socket.on(REALTIME.typingStopped, onTypingStopped);
 
     return () => {
       socket.off("connect", join);
       socket.off(REALTIME.messageCreated, onMessageCreated);
-      socket.off(REALTIME.conversationUpdated, onConversationUpdated);
       socket.off(REALTIME.typingStarted, onTypingStarted);
       socket.off(REALTIME.typingStopped, onTypingStopped);
       if (socket.connected) {
         socket.emit(REALTIME.leaveConversation, { conversationId });
       }
     };
-  }, [conversationId, queryClient]);
+  }, [conversationId]);
 
   return { typingNames: Object.values(typingUsers) };
 }

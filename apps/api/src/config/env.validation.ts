@@ -29,4 +29,28 @@ export const envValidationSchema = Joi.object({
     then: Joi.required(),
     otherwise: Joi.optional().allow(''),
   }),
+  STORAGE_PROVIDER: Joi.string().valid('s3', 'local').default('local'),
+  STORAGE_MAX_FILE_SIZE_MB: Joi.number().integer().min(1).default(10),
+  STORAGE_LOCAL_DIR: Joi.string().default('storage'),
+  // AWS settings are only required when the s3 provider is selected.
+  AWS_REGION: Joi.string().when('STORAGE_PROVIDER', {
+    is: 's3',
+    then: Joi.required(),
+    otherwise: Joi.optional().allow(''),
+  }),
+  AWS_S3_BUCKET: Joi.string().when('STORAGE_PROVIDER', {
+    is: 's3',
+    then: Joi.required(),
+    otherwise: Joi.optional().allow(''),
+  }),
+  AWS_ACCESS_KEY_ID: Joi.string().when('STORAGE_PROVIDER', {
+    is: 's3',
+    then: Joi.required(),
+    otherwise: Joi.optional().allow(''),
+  }),
+  AWS_SECRET_ACCESS_KEY: Joi.string().when('STORAGE_PROVIDER', {
+    is: 's3',
+    then: Joi.required(),
+    otherwise: Joi.optional().allow(''),
+  }),
 });

@@ -37,10 +37,15 @@ export async function sendViaSocket(
   socket: Socket,
   conversationId: string,
   content: string,
+  attachmentIds?: string[],
 ): Promise<WidgetMessage> {
   const ack = (await socket
     .timeout(8000)
-    .emitWithAck(EVENTS.sendMessage, { conversationId, content })) as SendAck;
+    .emitWithAck(EVENTS.sendMessage, {
+      conversationId,
+      content,
+      attachmentIds,
+    })) as SendAck;
   if ("error" in ack) throw new Error(ack.error);
   return ack.message;
 }
