@@ -11,7 +11,9 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { MessagesModule } from './modules/messages/messages.module';
+import { ConversationEventsModule } from './events/conversation-events.module';
 import { AiModule } from './modules/ai/ai.module';
+import { AutomationModule } from './modules/automation/automation.module';
 import { EmailModule } from './modules/email/email.module';
 import { KbModule } from './modules/kb/kb.module';
 import { WidgetModule } from './modules/widget/widget.module';
@@ -49,6 +51,7 @@ import { RedisModule } from './redis/redis.module';
     }),
     DatabaseModule,
     RedisModule,
+    ConversationEventsModule,
     HealthModule,
     AuthModule,
     WorkspaceMembersModule,
@@ -60,6 +63,7 @@ import { RedisModule } from './redis/redis.module';
     KbModule,
     AiModule,
     EmailModule,
+    AutomationModule,
     RealtimeModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],

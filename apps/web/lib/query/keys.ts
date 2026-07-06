@@ -21,6 +21,9 @@ export const queryKeys = {
     ["ai", conversationId, "classification"] as const,
   aiKbSuggestions: (conversationId: string) =>
     ["ai", conversationId, "kb"] as const,
+  automationRules: ["automation", "rules"] as const,
+  automationHistory: (params: { ruleId?: string; page: number }) =>
+    ["automation", "history", params] as const,
   kbCategories: ["kb", "categories"] as const,
   kbArticles: (params: {
     search?: string;

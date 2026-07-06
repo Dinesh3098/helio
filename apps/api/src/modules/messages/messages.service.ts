@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import {
+  AutomationTrigger,
   Conversation,
   ConversationStatus,
   Message,
@@ -17,6 +18,7 @@ import {
   User,
   type MessageMetadata,
 } from '../../database/entities';
+import { ConversationEventsService } from '../../events/conversation-events.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import {
   MessageResponseDto,
@@ -42,6 +44,7 @@ export class MessagesService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly dataSource: DataSource,
+    private readonly conversationEvents: ConversationEventsService,
   ) {}
 
   /**
@@ -109,7 +112,36 @@ export class MessagesService {
       content: dto.content,
       metadata: metadata ?? null,
     });
-    return this.toResponse(message, user.name);
+    const response = this.toResponse(message, user.name);
+    this.conversationEvents.emit({
+      trigger: AutomationTrigger.MESSAGE_SENT,
+      workspaceId,
+      conversationId,
+      message: response,
+    });
+    return response;
+  }
+
+  /**
+   * Automation-originated reply (senderId null — no human author). Runs
+   * inside the executor's suppression scope, so it cannot re-trigger
+   * rules; the caller broadcasts it to the room.
+   */
+  async createAutomationMessage(
+    workspaceId: string,
+    conversationId: string,
+    content: string,
+  ): Promise<MessageResponseDto> {
+    const conversation = await this.findInWorkspace(
+      workspaceId,
+      conversationId,
+    );
+    const message = await this.append(conversation, {
+      senderType: MessageSenderType.USER,
+      senderId: null,
+      content,
+    });
+    return this.toResponse(message, 'Automation');
   }
 
   /**
@@ -138,7 +170,14 @@ export class MessagesService {
       content: dto.content,
       metadata: metadata ?? null,
     });
-    return this.toResponse(message, conversation.contact.name);
+    const response = this.toResponse(message, conversation.contact.name);
+    this.conversationEvents.emit({
+      trigger: AutomationTrigger.MESSAGE_RECEIVED,
+      workspaceId: visitor.workspaceId,
+      conversationId: conversation.id,
+      message: response,
+    });
+    return response;
   }
 
   /**

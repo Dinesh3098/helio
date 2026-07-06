@@ -94,6 +94,10 @@ export class Conversation {
   @Column({ name: 'assigned_at', type: 'timestamptz', nullable: true })
   assignedAt: Date | null;
 
+  /** Free-form labels, managed by agents and automation rules. */
+  @Column({ type: 'text', array: true, default: () => "'{}'" })
+  tags: string[];
+
   @Column({ name: 'last_message_preview', type: 'text', nullable: true })
   lastMessagePreview: string | null;
 

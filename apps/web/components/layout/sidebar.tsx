@@ -6,6 +6,7 @@ import {
   Settings,
   Users,
   UsersRound,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { href: "/contacts", label: "Contacts", icon: UsersRound },
   { href: "/team", label: "Team", icon: Users },
   { href: "/knowledge-base", label: "Knowledge Base", icon: BookOpen },
+  { href: "/automation", label: "Automation", icon: Zap },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

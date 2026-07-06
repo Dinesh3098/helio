@@ -28,6 +28,9 @@ export class ConversationResponseDto {
   @ApiPropertyOptional({ nullable: true })
   subject: string | null;
 
+  @ApiProperty({ type: String, isArray: true })
+  tags: string[];
+
   @ApiPropertyOptional({ format: 'uuid', nullable: true })
   assignedToUserId: string | null;
 

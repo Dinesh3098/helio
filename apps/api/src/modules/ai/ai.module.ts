@@ -33,5 +33,7 @@ import { GeminiProvider } from './providers/gemini.provider';
     // Swap the provider here to change AI vendors — nothing else moves.
     { provide: AI_PROVIDER, useClass: GeminiProvider },
   ],
+  // Exported for the automation engine's AI actions.
+  exports: [AiService],
 })
 export class AiModule {}
