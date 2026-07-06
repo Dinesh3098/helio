@@ -8,4 +8,4 @@ compatibility_date = "2026-07-01"
 # Public origin of the Helio API — no trailing slash.
 # Local dev: a `cloudflared tunnel --url http://localhost:4000` URL.
 # Production: the deployed API origin (e.g. https://api.dineshbhadane.com).
-WEBHOOK_URL = "https://gratis-foreign-combines-infections.trycloudflare.com"
+WEBHOOK_URL = "https://api.dineshbhadane.com"

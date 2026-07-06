@@ -1,0 +1,8 @@
+# demo.dineshbhadane.com origin: serve the dashboard's /demo page at the
+# subdomain root; every other path (widget bundles, _next assets, API
+# rewrites) passes straight through to the dashboard.
+:8081 {
+	@root path /
+	rewrite @root /demo
+	reverse_proxy host.docker.internal:3000
+}
