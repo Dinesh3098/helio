@@ -1,19 +1,19 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
 import {
   Contact,
   Conversation,
   EmailAccount,
   EmailThread,
-} from '../../database/entities';
-import { RealtimeModule } from '../../realtime/realtime.module';
-import { MessagesModule } from '../messages/messages.module';
-import { WorkspaceMembersModule } from '../workspace-members/workspace-members.module';
-import { EmailController } from './email.controller';
-import { EmailService } from './email.service';
-import { EMAIL_PROVIDER } from './providers/provider.interface';
-import { ResendProvider } from './providers/resend.provider';
-import { EmailWebhookController } from './webhooks/email-webhook.controller';
+} from "../../database/entities";
+import { RealtimeModule } from "../../realtime/realtime.module";
+import { MessagesModule } from "../messages/messages.module";
+import { WorkspaceMembersModule } from "../workspace-members/workspace-members.module";
+import { EmailController } from "./email.controller";
+import { EmailService } from "./email.service";
+import { EMAIL_PROVIDER } from "./providers/provider.interface";
+import { ResendProvider } from "./providers/resend.provider";
+import { EmailWebhookController } from "./webhooks/email-webhook.controller";
 
 @Module({
   imports: [

@@ -1,14 +1,14 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { MessageResponseDto } from '../../messages/dto/message-response.dto';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { MessageResponseDto } from "../../messages/dto/message-response.dto";
 
 export class TimelineEventDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
-  @ApiProperty({ example: 'conversation.status_changed' })
+  @ApiProperty({ example: "conversation.status_changed" })
   action: string;
 
-  @ApiPropertyOptional({ nullable: true, description: 'Null = system' })
+  @ApiPropertyOptional({ nullable: true, description: "Null = system" })
   actorName: string | null;
 
   @ApiPropertyOptional({ nullable: true })
@@ -19,8 +19,8 @@ export class TimelineEventDto {
 }
 
 export class TimelineEntryDto {
-  @ApiProperty({ enum: ['message', 'event'] })
-  kind: 'message' | 'event';
+  @ApiProperty({ enum: ["message", "event"] })
+  kind: "message" | "event";
 
   @ApiProperty()
   at: Date;

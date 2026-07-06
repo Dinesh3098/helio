@@ -1,10 +1,13 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class SystemServiceDto {
-  @ApiProperty({ example: 'PostgreSQL' })
+  @ApiProperty({ example: "PostgreSQL" })
   name: string;
 
-  @ApiProperty({ example: 'up', enum: ['up', 'down', 'configured', 'unconfigured'] })
+  @ApiProperty({
+    example: "up",
+    enum: ["up", "down", "configured", "unconfigured"],
+  })
   status: string;
 
   @ApiPropertyOptional({ example: 12 })
@@ -24,12 +27,12 @@ export class SystemStatusDto {
   @ApiProperty()
   memory: { rssMb: number; heapUsedMb: number; heapTotalMb: number };
 
-  @ApiProperty({ example: '0.1.0' })
+  @ApiProperty({ example: "0.1.0" })
   version: string;
 
-  @ApiProperty({ example: 'development' })
+  @ApiProperty({ example: "development" })
   environment: string;
 
-  @ApiProperty({ example: 'v22.20.0' })
+  @ApiProperty({ example: "v22.20.0" })
   node: string;
 }

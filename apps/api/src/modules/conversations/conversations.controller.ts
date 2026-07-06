@@ -10,33 +10,33 @@ import {
   Post,
   Query,
   UseGuards,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
-} from '@nestjs/swagger';
-import { CurrentMembership } from '../../common/decorators/current-membership.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../common/guards/roles.guard';
+} from "@nestjs/swagger";
+import { CurrentMembership } from "../../common/decorators/current-membership.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { RolesGuard } from "../../common/guards/roles.guard";
 import {
   ConversationStatus,
   WorkspaceMember,
   WorkspaceMemberRole,
-} from '../../database/entities';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ConversationsService } from './conversations.service';
-import { AssignConversationDto } from './dto/assign-conversation.dto';
+} from "../../database/entities";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { ConversationsService } from "./conversations.service";
+import { AssignConversationDto } from "./dto/assign-conversation.dto";
 import {
   ConversationDetailResponseDto,
   ConversationResponseDto,
   PaginatedConversationsDto,
-} from './dto/conversation-response.dto';
-import { QueryConversationsDto } from './dto/query-conversations.dto';
-import { TimelineResponseDto } from './dto/timeline.dto';
-import { UpdateConversationDto } from './dto/update-conversation.dto';
+} from "./dto/conversation-response.dto";
+import { QueryConversationsDto } from "./dto/query-conversations.dto";
+import { TimelineResponseDto } from "./dto/timeline.dto";
+import { UpdateConversationDto } from "./dto/update-conversation.dto";
 
 const ALL_ROLES = [
   WorkspaceMemberRole.OWNER,
@@ -44,22 +44,22 @@ const ALL_ROLES = [
   WorkspaceMemberRole.AGENT,
 ] as const;
 
-@ApiTags('conversations')
+@ApiTags("conversations")
 @ApiBearerAuth()
 @ApiHeader({
-  name: 'x-workspace-id',
+  name: "x-workspace-id",
   required: false,
   description:
-    'Workspace to operate on. Optional when the user belongs to exactly one workspace.',
+    "Workspace to operate on. Optional when the user belongs to exactly one workspace.",
 })
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('conversations')
+@Controller("conversations")
 export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
 
   @Get()
   @Roles(...ALL_ROLES)
-  @ApiOperation({ summary: 'List conversations (filters, paginated)' })
+  @ApiOperation({ summary: "List conversations (filters, paginated)" })
   @ApiOkResponse({ type: PaginatedConversationsDto })
   list(
     @CurrentMembership() membership: WorkspaceMember,
@@ -68,68 +68,68 @@ export class ConversationsController {
     return this.conversationsService.list(membership.workspaceId, query);
   }
 
-  @Get(':id')
+  @Get(":id")
   @Roles(...ALL_ROLES)
   @ApiOperation({
-    summary: 'Conversation detail: contact, assignee, AI summary, counts',
+    summary: "Conversation detail: contact, assignee, AI summary, counts",
   })
   @ApiOkResponse({ type: ConversationDetailResponseDto })
   getDetail(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
   ): Promise<ConversationDetailResponseDto> {
     return this.conversationsService.getDetail(membership.workspaceId, id);
   }
 
-  @Get(':id/timeline')
+  @Get(":id/timeline")
   @Roles(...ALL_ROLES)
   @ApiOperation({
-    summary: 'Messages + audit events interleaved chronologically',
+    summary: "Messages + audit events interleaved chronologically",
   })
   @ApiOkResponse({ type: TimelineResponseDto })
   timeline(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
   ): Promise<TimelineResponseDto> {
     return this.conversationsService.timeline(membership.workspaceId, id);
   }
 
-  @Patch(':id')
+  @Patch(":id")
   @Roles(...ALL_ROLES)
-  @ApiOperation({ summary: 'Update conversation status and/or priority' })
+  @ApiOperation({ summary: "Update conversation status and/or priority" })
   @ApiOkResponse({ type: ConversationResponseDto })
   update(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateConversationDto,
   ): Promise<ConversationResponseDto> {
     return this.conversationsService.update(membership.workspaceId, id, dto);
   }
 
-  @Post(':id/assign')
+  @Post(":id/assign")
   @Roles(...ALL_ROLES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      'Assign or unassign (owner/admin: anyone; agent: themselves only; null/omitted member unassigns)',
+      "Assign or unassign (owner/admin: anyone; agent: themselves only; null/omitted member unassigns)",
   })
   @ApiOkResponse({ type: ConversationResponseDto })
   assign(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: AssignConversationDto,
   ): Promise<ConversationResponseDto> {
     return this.conversationsService.assign(membership, id, dto);
   }
 
-  @Post(':id/resolve')
+  @Post(":id/resolve")
   @Roles(...ALL_ROLES)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Mark conversation RESOLVED' })
+  @ApiOperation({ summary: "Mark conversation RESOLVED" })
   @ApiOkResponse({ type: ConversationResponseDto })
   resolve(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
   ): Promise<ConversationResponseDto> {
     return this.conversationsService.setStatus(
       membership.workspaceId,
@@ -138,14 +138,14 @@ export class ConversationsController {
     );
   }
 
-  @Post(':id/snooze')
+  @Post(":id/snooze")
   @Roles(...ALL_ROLES)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Mark conversation SNOOZED' })
+  @ApiOperation({ summary: "Mark conversation SNOOZED" })
   @ApiOkResponse({ type: ConversationResponseDto })
   snooze(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
   ): Promise<ConversationResponseDto> {
     return this.conversationsService.setStatus(
       membership.workspaceId,
@@ -154,14 +154,14 @@ export class ConversationsController {
     );
   }
 
-  @Post(':id/reopen')
+  @Post(":id/reopen")
   @Roles(...ALL_ROLES)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Reopen conversation (OPEN)' })
+  @ApiOperation({ summary: "Reopen conversation (OPEN)" })
   @ApiOkResponse({ type: ConversationResponseDto })
   reopen(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
   ): Promise<ConversationResponseDto> {
     return this.conversationsService.setStatus(
       membership.workspaceId,

@@ -2,18 +2,18 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Not, Repository } from 'typeorm';
-import { Contact, Conversation } from '../../database/entities';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { ILike, Not, Repository } from "typeorm";
+import { Contact, Conversation } from "../../database/entities";
 import {
   ContactDetailResponseDto,
   ContactResponseDto,
   PaginatedContactsDto,
-} from './dto/contact-response.dto';
-import { AuditService } from '../audit/audit.service';
-import { QueryContactsDto } from './dto/query-contacts.dto';
-import { UpdateContactDto } from './dto/update-contact.dto';
+} from "./dto/contact-response.dto";
+import { AuditService } from "../audit/audit.service";
+import { QueryContactsDto } from "./dto/query-contacts.dto";
+import { UpdateContactDto } from "./dto/update-contact.dto";
 
 @Injectable()
 export class ContactsService {
@@ -40,7 +40,7 @@ export class ContactsService {
 
     const [contacts, total] = await this.contactsRepository.findAndCount({
       where,
-      order: { updatedAt: 'DESC' },
+      order: { updatedAt: "DESC" },
       skip: query.skip,
       take: query.limit,
     });
@@ -62,21 +62,21 @@ export class ContactsService {
     // One aggregate query over the (workspace_id, contact_id) index instead
     // of three separate counts.
     const stats = await this.conversationsRepository
-      .createQueryBuilder('c')
-      .select('COUNT(*)', 'total')
-      .addSelect(`COUNT(*) FILTER (WHERE c.status = 'OPEN')`, 'open')
+      .createQueryBuilder("c")
+      .select("COUNT(*)", "total")
+      .addSelect(`COUNT(*) FILTER (WHERE c.status = 'OPEN')`, "open")
       .addSelect(
-        'MAX(COALESCE(c.last_message_at, c.created_at))',
-        'lastActivity',
+        "MAX(COALESCE(c.last_message_at, c.created_at))",
+        "lastActivity",
       )
-      .where('c.workspace_id = :workspaceId', { workspaceId })
-      .andWhere('c.contact_id = :contactId', { contactId })
+      .where("c.workspace_id = :workspaceId", { workspaceId })
+      .andWhere("c.contact_id = :contactId", { contactId })
       .getRawOne<{ total: string; open: string; lastActivity: Date | null }>();
 
     return {
       ...this.toResponse(contact),
-      totalConversations: parseInt(stats?.total ?? '0', 10),
-      openConversations: parseInt(stats?.open ?? '0', 10),
+      totalConversations: parseInt(stats?.total ?? "0", 10),
+      openConversations: parseInt(stats?.open ?? "0", 10),
       lastConversationAt: stats?.lastActivity ?? null,
     };
   }
@@ -95,7 +95,7 @@ export class ContactsService {
       });
       if (duplicate) {
         throw new ConflictException(
-          'Another contact in this workspace already uses this email',
+          "Another contact in this workspace already uses this email",
         );
       }
       contact.email = email;
@@ -110,9 +110,9 @@ export class ContactsService {
     const saved = await this.contactsRepository.save(contact);
     this.auditService.record({
       workspaceId,
-      resourceType: 'contact',
+      resourceType: "contact",
       resourceId: contactId,
-      action: 'contact.updated',
+      action: "contact.updated",
       metadata: { fields: Object.keys(dto) },
     });
     return this.toResponse(saved);
@@ -126,7 +126,7 @@ export class ContactsService {
       where: { id: contactId, workspaceId },
     });
     if (!contact) {
-      throw new NotFoundException('Contact not found');
+      throw new NotFoundException("Contact not found");
     }
     return contact;
   }

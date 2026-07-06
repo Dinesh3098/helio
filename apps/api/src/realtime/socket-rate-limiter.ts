@@ -1,4 +1,4 @@
-import type { Socket } from 'socket.io';
+import type { Socket } from "socket.io";
 
 /**
  * Sliding-window throttle keyed per socket per event. State lives in a
@@ -15,8 +15,7 @@ export class SocketRateLimiter {
     maxEvents: number,
     windowMs: number,
   ): boolean {
-    const byEvent =
-      this.windows.get(socket) ?? new Map<string, number[]>();
+    const byEvent = this.windows.get(socket) ?? new Map<string, number[]>();
     this.windows.set(socket, byEvent);
 
     const now = Date.now();

@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 let cached: string | null = null;
 
@@ -14,11 +14,30 @@ export function appVersion(): string {
   if (cached !== null) return cached;
   try {
     const pkg = JSON.parse(
-      readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf8'),
+      readFileSync(join(__dirname, "..", "..", "package.json"), "utf8"),
     ) as { version?: string };
-    cached = pkg.version ?? '0.0.0';
+    cached = pkg.version ?? "0.0.0";
   } catch {
-    cached = '0.0.0';
+    cached = "0.0.0";
   }
   return cached;
+}
+
+export interface BuildInfo {
+  version: string;
+  commit: string;
+  buildDate: string;
+}
+
+/**
+ * Release metadata stamped into the image at Docker build time (GIT_SHA
+ * and BUILD_DATE build args → env). Local/dev runs report "unknown" —
+ * intentionally not required configuration.
+ */
+export function buildInfo(): BuildInfo {
+  return {
+    version: appVersion(),
+    commit: process.env.GIT_SHA || "unknown",
+    buildDate: process.env.BUILD_DATE || "unknown",
+  };
 }

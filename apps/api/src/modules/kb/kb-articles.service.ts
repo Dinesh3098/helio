@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
-import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
-import { HelpArticle } from '../../database/entities';
-import { AuditService } from '../audit/audit.service';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, SelectQueryBuilder } from "typeorm";
+import type { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
+import { HelpArticle } from "../../database/entities";
+import { AuditService } from "../audit/audit.service";
 import {
   ArticleResponseDto,
   ArticleSummaryDto,
@@ -11,8 +11,8 @@ import {
   PaginatedArticlesDto,
   QueryArticlesDto,
   UpdateArticleDto,
-} from './dto/article.dto';
-import { KbCategoriesService } from './kb-categories.service';
+} from "./dto/article.dto";
+import { KbCategoriesService } from "./kb-categories.service";
 
 @Injectable()
 export class KbArticlesService {
@@ -30,12 +30,12 @@ export class KbArticlesService {
     const qb = this.baseQuery(workspaceId);
 
     if (query.categoryId) {
-      qb.andWhere('a.category_id = :categoryId', {
+      qb.andWhere("a.category_id = :categoryId", {
         categoryId: query.categoryId,
       });
     }
     if (query.published !== undefined) {
-      qb.andWhere('a.is_published = :published', {
+      qb.andWhere("a.is_published = :published", {
         published: query.published,
       });
     }
@@ -44,9 +44,9 @@ export class KbArticlesService {
       this.applySearch(qb, query.search);
     } else {
       const SORT_COLUMNS: Record<typeof query.sortBy, string> = {
-        updatedAt: 'a.updated_at',
-        createdAt: 'a.created_at',
-        title: 'a.title',
+        updatedAt: "a.updated_at",
+        createdAt: "a.created_at",
+        title: "a.title",
       };
       qb.orderBy(SORT_COLUMNS[query.sortBy], query.sortOrder);
     }
@@ -70,7 +70,7 @@ export class KbArticlesService {
       relations: { category: true, createdByUser: true, updatedByUser: true },
     });
     if (!article) {
-      throw new NotFoundException('Article not found');
+      throw new NotFoundException("Article not found");
     }
     return this.toDetail(article);
   }
@@ -98,9 +98,9 @@ export class KbArticlesService {
     );
     this.auditService.record({
       workspaceId,
-      resourceType: 'kb_article',
+      resourceType: "kb_article",
       resourceId: article.id,
-      action: 'kb.article_created',
+      action: "kb.article_created",
       metadata: { title: article.title, slug: article.slug },
     });
     return this.getById(workspaceId, article.id);
@@ -116,14 +116,11 @@ export class KbArticlesService {
       where: { id: articleId, workspaceId },
     });
     if (!article) {
-      throw new NotFoundException('Article not found');
+      throw new NotFoundException("Article not found");
     }
 
     if (dto.categoryId && dto.categoryId !== article.categoryId) {
-      await this.categoriesService.findInWorkspace(
-        workspaceId,
-        dto.categoryId,
-      );
+      await this.categoriesService.findInWorkspace(workspaceId, dto.categoryId);
       article.categoryId = dto.categoryId;
     }
     if (dto.title !== undefined && dto.title !== article.title) {
@@ -142,14 +139,14 @@ export class KbArticlesService {
     await this.articlesRepository.save(article);
     this.auditService.record({
       workspaceId,
-      resourceType: 'kb_article',
+      resourceType: "kb_article",
       resourceId: article.id,
       action:
         dto.isPublished === undefined
-          ? 'kb.article_updated'
+          ? "kb.article_updated"
           : dto.isPublished
-            ? 'kb.article_published'
-            : 'kb.article_unpublished',
+            ? "kb.article_published"
+            : "kb.article_unpublished",
       metadata: { title: article.title, fields: Object.keys(dto) },
     });
     return this.getById(workspaceId, article.id);
@@ -160,15 +157,15 @@ export class KbArticlesService {
       where: { id: articleId, workspaceId },
     });
     if (!article) {
-      throw new NotFoundException('Article not found');
+      throw new NotFoundException("Article not found");
     }
     const removed = { id: articleId, title: article.title };
     await this.articlesRepository.remove(article);
     this.auditService.record({
       workspaceId,
-      resourceType: 'kb_article',
+      resourceType: "kb_article",
       resourceId: removed.id,
-      action: 'kb.article_deleted',
+      action: "kb.article_deleted",
       metadata: { title: removed.title },
     });
   }
@@ -184,16 +181,16 @@ export class KbArticlesService {
       terms,
     }).orderBy(
       "ts_rank(a.search_vector, plainto_tsquery('english', :terms))",
-      'DESC',
+      "DESC",
     );
   }
 
   private baseQuery(workspaceId: string): SelectQueryBuilder<HelpArticle> {
     return this.articlesRepository
-      .createQueryBuilder('a')
-      .leftJoinAndSelect('a.category', 'category')
-      .leftJoinAndSelect('a.updatedByUser', 'updatedBy')
-      .where('a.workspace_id = :workspaceId', { workspaceId });
+      .createQueryBuilder("a")
+      .leftJoinAndSelect("a.category", "category")
+      .leftJoinAndSelect("a.updatedByUser", "updatedBy")
+      .where("a.workspace_id = :workspaceId", { workspaceId });
   }
 
   /** "How to Install?" -> how-to-install, deduped per workspace (-2, -3…). */
@@ -204,19 +201,19 @@ export class KbArticlesService {
     const base =
       title
         .toLowerCase()
-        .normalize('NFKD')
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 200) || 'article';
+        .normalize("NFKD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 200) || "article";
 
     const taken = new Set(
       (
         await this.articlesRepository
-          .createQueryBuilder('a')
-          .select('a.slug', 'slug')
-          .where('a.workspace_id = :workspaceId', { workspaceId })
-          .andWhere('a.slug LIKE :like', { like: `${base}%` })
+          .createQueryBuilder("a")
+          .select("a.slug", "slug")
+          .where("a.workspace_id = :workspaceId", { workspaceId })
+          .andWhere("a.slug LIKE :like", { like: `${base}%` })
           .getRawMany<{ slug: string }>()
       ).map((row) => row.slug),
     );
@@ -236,7 +233,7 @@ export class KbArticlesService {
       excerpt: article.excerpt,
       isPublished: article.isPublished,
       categoryId: article.categoryId,
-      categoryName: article.category?.name ?? '',
+      categoryName: article.category?.name ?? "",
       updatedByName: article.updatedByUser?.name ?? null,
       createdAt: article.createdAt,
       updatedAt: article.updatedAt,

@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, QueryFailedError, Repository } from 'typeorm';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { In, QueryFailedError, Repository } from "typeorm";
 import {
   AutomationTrigger,
   Contact,
@@ -8,15 +8,15 @@ import {
   ConversationChannel,
   ConversationStatus,
   Workspace,
-} from '../../database/entities';
-import { ConversationEventsService } from '../../events/conversation-events.service';
-import { MetricsService } from '../../metrics/metrics.service';
-import { AuditService } from '../audit/audit.service';
-import { CreateWidgetSessionDto } from './dto/create-widget-session.dto';
-import { WidgetSessionResponseDto } from './dto/widget-session-response.dto';
-import { WidgetAuthService } from './widget-auth.service';
+} from "../../database/entities";
+import { ConversationEventsService } from "../../events/conversation-events.service";
+import { MetricsService } from "../../metrics/metrics.service";
+import { AuditService } from "../audit/audit.service";
+import { CreateWidgetSessionDto } from "./dto/create-widget-session.dto";
+import { WidgetSessionResponseDto } from "./dto/widget-session-response.dto";
+import { WidgetAuthService } from "./widget-auth.service";
 
-const PG_UNIQUE_VIOLATION = '23505';
+const PG_UNIQUE_VIOLATION = "23505";
 
 /**
  * Visitor session bootstrap: workspace check → find-or-create the contact
@@ -49,7 +49,7 @@ export class WidgetService {
       where: { id: dto.workspaceId },
     });
     if (!workspace) {
-      throw new NotFoundException('Workspace not found');
+      throw new NotFoundException("Workspace not found");
     }
 
     this.metricsService.recordWidgetSession();
@@ -121,7 +121,7 @@ export class WidgetService {
         channel: ConversationChannel.CHAT,
         status: In([ConversationStatus.OPEN, ConversationStatus.SNOOZED]),
       },
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
     if (active) return active;
 
@@ -142,10 +142,10 @@ export class WidgetService {
     this.auditService.record({
       workspaceId: contact.workspaceId,
       actorUserId: null,
-      resourceType: 'conversation',
+      resourceType: "conversation",
       resourceId: conversation.id,
-      action: 'conversation.created',
-      metadata: { source: 'widget', contactId: contact.id },
+      action: "conversation.created",
+      metadata: { source: "widget", contactId: contact.id },
     });
     return conversation;
   }

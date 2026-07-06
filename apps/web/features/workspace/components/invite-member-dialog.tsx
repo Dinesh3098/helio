@@ -28,7 +28,11 @@ import { getApiErrorMessage } from "@/lib/api/client";
 import { useInviteMember } from "../hooks";
 import { inviteMemberSchema, type InviteMemberValues } from "../schemas";
 
-export function InviteMemberDialog({ canInviteAdmin }: { canInviteAdmin: boolean }) {
+export function InviteMemberDialog({
+  canInviteAdmin,
+}: {
+  canInviteAdmin: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const invite = useInviteMember();
   const form = useForm<InviteMemberValues>({

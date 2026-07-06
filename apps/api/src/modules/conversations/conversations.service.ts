@@ -2,9 +2,9 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { DataSource, Repository, SelectQueryBuilder } from "typeorm";
 import {
   AutomationTrigger,
   Conversation,
@@ -14,27 +14,24 @@ import {
   Message,
   WorkspaceMember,
   WorkspaceMemberRole,
-} from '../../database/entities';
-import { AuditService } from '../audit/audit.service';
-import { MessagesService } from '../messages/messages.service';
-import { QueryMessagesDto } from '../messages/dto/query-messages.dto';
-import {
-  TimelineEntryDto,
-  TimelineResponseDto,
-} from './dto/timeline.dto';
-import { ConversationEventsService } from '../../events/conversation-events.service';
-import { RealtimeEmitterService } from '../../realtime/realtime-emitter.service';
-import { SERVER_EVENTS } from '../../realtime/realtime.events';
-import { WorkspaceMembersService } from '../workspace-members/workspace-members.service';
-import { AssignConversationDto } from './dto/assign-conversation.dto';
+} from "../../database/entities";
+import { AuditService } from "../audit/audit.service";
+import { MessagesService } from "../messages/messages.service";
+import { QueryMessagesDto } from "../messages/dto/query-messages.dto";
+import { TimelineEntryDto, TimelineResponseDto } from "./dto/timeline.dto";
+import { ConversationEventsService } from "../../events/conversation-events.service";
+import { RealtimeEmitterService } from "../../realtime/realtime-emitter.service";
+import { SERVER_EVENTS } from "../../realtime/realtime.events";
+import { WorkspaceMembersService } from "../workspace-members/workspace-members.service";
+import { AssignConversationDto } from "./dto/assign-conversation.dto";
 import {
   ConversationAssigneeDto,
   ConversationDetailResponseDto,
   ConversationResponseDto,
   PaginatedConversationsDto,
-} from './dto/conversation-response.dto';
-import { QueryConversationsDto } from './dto/query-conversations.dto';
-import { UpdateConversationDto } from './dto/update-conversation.dto';
+} from "./dto/conversation-response.dto";
+import { QueryConversationsDto } from "./dto/query-conversations.dto";
+import { UpdateConversationDto } from "./dto/update-conversation.dto";
 
 /** Broadcast shape: the list row plus the resolved assignee for details. */
 export type ConversationUpdatedPayload = ConversationResponseDto & {
@@ -65,31 +62,31 @@ export class ConversationsService {
     const qb = this.baseQuery(workspaceId);
 
     if (query.status) {
-      qb.andWhere('c.status = :status', { status: query.status });
+      qb.andWhere("c.status = :status", { status: query.status });
     }
     if (query.channel) {
-      qb.andWhere('c.channel = :channel', { channel: query.channel });
+      qb.andWhere("c.channel = :channel", { channel: query.channel });
     }
     if (query.assignedToUserId) {
-      qb.andWhere('c.assigned_to_user_id = :assignee', {
+      qb.andWhere("c.assigned_to_user_id = :assignee", {
         assignee: query.assignedToUserId,
       });
     }
     if (query.contactId) {
-      qb.andWhere('c.contact_id = :contactId', {
+      qb.andWhere("c.contact_id = :contactId", {
         contactId: query.contactId,
       });
     }
     if (query.search) {
-      qb.andWhere('contact.name ILIKE :search', {
+      qb.andWhere("contact.name ILIKE :search", {
         search: `%${query.search}%`,
       });
     }
 
     const sortExpression =
-      query.sortBy === 'createdAt'
-        ? 'c.created_at'
-        : 'COALESCE(c.last_message_at, c.created_at)';
+      query.sortBy === "createdAt"
+        ? "c.created_at"
+        : "COALESCE(c.last_message_at, c.created_at)";
     // offset/limit (not skip/take): skip/take's join-pagination subquery
     // cannot parse raw orderBy expressions, and the contact join is
     // many-to-one so raw pagination cannot multiply rows.
@@ -115,7 +112,7 @@ export class ConversationsService {
       relations: { contact: true, assignedToUser: true },
     });
     if (!conversation) {
-      throw new NotFoundException('Conversation not found');
+      throw new NotFoundException("Conversation not found");
     }
 
     const [summary, messagesCount] = await Promise.all([
@@ -177,18 +174,18 @@ export class ConversationsService {
       if (conversation.status !== previousStatus) {
         this.auditService.record({
           workspaceId,
-          resourceType: 'conversation',
+          resourceType: "conversation",
           resourceId: conversationId,
-          action: 'conversation.status_changed',
+          action: "conversation.status_changed",
           metadata: { from: previousStatus, to: conversation.status },
         });
       }
       if (conversation.priority !== previousPriority) {
         this.auditService.record({
           workspaceId,
-          resourceType: 'conversation',
+          resourceType: "conversation",
           resourceId: conversationId,
-          action: 'conversation.priority_changed',
+          action: "conversation.priority_changed",
           metadata: { from: previousPriority, to: conversation.priority },
         });
       }
@@ -243,14 +240,14 @@ export class ConversationsService {
         dto.workspaceMemberId,
       );
       if (!member) {
-        throw new NotFoundException('Member not found in this workspace');
+        throw new NotFoundException("Member not found in this workspace");
       }
       if (
         actor.role === WorkspaceMemberRole.AGENT &&
         member.userId !== actor.userId
       ) {
         throw new ForbiddenException(
-          'Agents can only assign conversations to themselves',
+          "Agents can only assign conversations to themselves",
         );
       }
       targetUserId = member.userId;
@@ -260,7 +257,7 @@ export class ConversationsService {
       conversation.assignedToUserId !== actor.userId
     ) {
       throw new ForbiddenException(
-        'Agents can only unassign conversations assigned to themselves',
+        "Agents can only unassign conversations assigned to themselves",
       );
     }
 
@@ -281,11 +278,11 @@ export class ConversationsService {
       await this.broadcastUpdated(actor.workspaceId, conversationId);
       this.auditService.record({
         workspaceId: actor.workspaceId,
-        resourceType: 'conversation',
+        resourceType: "conversation",
         resourceId: conversationId,
         action: targetUserId
-          ? 'conversation.assigned'
-          : 'conversation.unassigned',
+          ? "conversation.assigned"
+          : "conversation.unassigned",
         metadata: targetUserId ? { assignedToUserId: targetUserId } : {},
       });
     }
@@ -325,11 +322,11 @@ export class ConversationsService {
     this.auditService.record({
       workspaceId,
       actorUserId: null,
-      resourceType: 'conversation',
+      resourceType: "conversation",
       resourceId: conversationId,
-      action: userId ? 'conversation.assigned' : 'conversation.unassigned',
+      action: userId ? "conversation.assigned" : "conversation.unassigned",
       metadata: {
-        source: 'automation',
+        source: "automation",
         ...(userId ? { assignedToUserId: userId } : {}),
       },
     });
@@ -354,7 +351,7 @@ export class ConversationsService {
       ),
       this.auditService.listForResource(
         workspaceId,
-        'conversation',
+        "conversation",
         conversationId,
       ),
     ]);
@@ -362,14 +359,14 @@ export class ConversationsService {
     const entries: TimelineEntryDto[] = [
       ...messagesPage.data.map(
         (message): TimelineEntryDto => ({
-          kind: 'message' as const,
+          kind: "message" as const,
           at: message.createdAt,
           message,
         }),
       ),
       ...events.map(
         (event): TimelineEntryDto => ({
-          kind: 'event' as const,
+          kind: "event" as const,
           at: event.createdAt,
           event: {
             id: event.id,
@@ -409,10 +406,10 @@ export class ConversationsService {
     this.auditService.record({
       workspaceId,
       actorUserId: null,
-      resourceType: 'conversation',
+      resourceType: "conversation",
       resourceId: conversationId,
-      action: remove ? 'conversation.tag_removed' : 'conversation.tag_added',
-      metadata: { tag, source: 'automation' },
+      action: remove ? "conversation.tag_removed" : "conversation.tag_added",
+      metadata: { tag, source: "automation" },
     });
   }
 
@@ -477,9 +474,9 @@ export class ConversationsService {
 
   private baseQuery(workspaceId: string): SelectQueryBuilder<Conversation> {
     return this.conversationsRepository
-      .createQueryBuilder('c')
-      .leftJoinAndSelect('c.contact', 'contact')
-      .where('c.workspace_id = :workspaceId', { workspaceId });
+      .createQueryBuilder("c")
+      .leftJoinAndSelect("c.contact", "contact")
+      .where("c.workspace_id = :workspaceId", { workspaceId });
   }
 
   private async findWithContact(
@@ -491,7 +488,7 @@ export class ConversationsService {
       relations: { contact: true },
     });
     if (!conversation) {
-      throw new NotFoundException('Conversation not found');
+      throw new NotFoundException("Conversation not found");
     }
     return conversation;
   }

@@ -33,8 +33,7 @@ export function AttachmentView({
 
   const download = async () => {
     if (!attachment.id) return;
-    const url =
-      blob.data ?? (await attachmentsApi.fetchBlobUrl(attachment.id));
+    const url = blob.data ?? (await attachmentsApi.fetchBlobUrl(attachment.id));
     const link = document.createElement("a");
     link.href = url;
     link.download = attachment.filename;

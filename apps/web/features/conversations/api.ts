@@ -16,8 +16,7 @@ export interface ConversationListParams {
 
 export const conversationsApi = {
   list: async (params: ConversationListParams) =>
-    (await api.get<Paginated<Conversation>>("/conversations", { params }))
-      .data,
+    (await api.get<Paginated<Conversation>>("/conversations", { params })).data,
 
   get: async (id: string) =>
     (await api.get<ConversationDetail>(`/conversations/${id}`)).data,
@@ -50,10 +49,9 @@ export const emailApi = {
 export const messagesApi = {
   list: async (conversationId: string, cursor?: string) =>
     (
-      await api.get<MessagesPage>(
-        `/conversations/${conversationId}/messages`,
-        { params: { cursor } },
-      )
+      await api.get<MessagesPage>(`/conversations/${conversationId}/messages`, {
+        params: { cursor },
+      })
     ).data,
 
   send: async (input: {

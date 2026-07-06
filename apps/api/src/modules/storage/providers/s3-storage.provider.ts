@@ -4,18 +4,18 @@ import {
   PutObjectCommand,
   S3Client,
   S3ServiceException,
-} from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AppConfig } from '../../../config/configuration';
-import { StorageProviderError } from '../errors/storage-provider.error';
+} from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { AppConfig } from "../../../config/configuration";
+import { StorageProviderError } from "../errors/storage-provider.error";
 import {
   ObjectDownload,
   PutObjectInput,
   StorageProvider,
-} from './storage-provider.interface';
+} from "./storage-provider.interface";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const SIGNED_URL_TTL_SECONDS = 300;
@@ -28,7 +28,7 @@ const SIGNED_URL_TTL_SECONDS = 300;
  */
 @Injectable()
 export class S3StorageProvider implements StorageProvider {
-  readonly name = 'S3';
+  readonly name = "S3";
 
   private readonly logger = new Logger(S3StorageProvider.name);
   private readonly bucket: string;
@@ -38,7 +38,7 @@ export class S3StorageProvider implements StorageProvider {
   private clientInstance: S3Client | null = null;
 
   constructor(config: ConfigService<AppConfig, true>) {
-    const aws = config.get('storage.aws', { infer: true });
+    const aws = config.get("storage.aws", { infer: true });
     this.bucket = aws.bucket;
     this.region = aws.region;
     this.accessKeyId = aws.accessKeyId;
@@ -54,8 +54,8 @@ export class S3StorageProvider implements StorageProvider {
     if (!this.clientInstance) {
       if (!this.region || !this.bucket) {
         throw new StorageProviderError(
-          'unavailable',
-          'S3 storage is not configured',
+          "unavailable",
+          "S3 storage is not configured",
         );
       }
       this.clientInstance = new S3Client({
@@ -84,7 +84,7 @@ export class S3StorageProvider implements StorageProvider {
       });
       await upload.done();
     } catch (error) {
-      throw this.mapError(error, 'upload');
+      throw this.mapError(error, "upload");
     }
   }
 
@@ -103,9 +103,9 @@ export class S3StorageProvider implements StorageProvider {
         }),
         { expiresIn: SIGNED_URL_TTL_SECONDS },
       );
-      return { kind: 'url', url };
+      return { kind: "url", url };
     } catch (error) {
-      throw this.mapError(error, 'sign');
+      throw this.mapError(error, "sign");
     }
   }
 
@@ -115,7 +115,7 @@ export class S3StorageProvider implements StorageProvider {
         new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
       );
     } catch (error) {
-      throw this.mapError(error, 'delete');
+      throw this.mapError(error, "delete");
     }
   }
 
@@ -130,13 +130,13 @@ export class S3StorageProvider implements StorageProvider {
       await this.client.send(
         new PutObjectCommand({
           Bucket: this.bucket,
-          Key: '.health/probe',
-          Body: 'ok',
-          ContentType: 'text/plain',
+          Key: ".health/probe",
+          Body: "ok",
+          ContentType: "text/plain",
         }),
       );
     } catch (error) {
-      throw this.mapError(error, 'health-probe');
+      throw this.mapError(error, "health-probe");
     }
   }
 
@@ -146,48 +146,45 @@ export class S3StorageProvider implements StorageProvider {
     if (error instanceof S3ServiceException) {
       const name = error.name;
       this.logger.warn(`S3 ${operation} failed: ${name} — ${error.message}`);
-      if (name === 'NoSuchKey' || name === 'NotFound') {
-        return new StorageProviderError('not_found', 'Object not found');
+      if (name === "NoSuchKey" || name === "NotFound") {
+        return new StorageProviderError("not_found", "Object not found");
       }
       if (
-        name === 'AccessDenied' ||
-        name === 'InvalidAccessKeyId' ||
-        name === 'SignatureDoesNotMatch' ||
-        name === 'ExpiredToken'
+        name === "AccessDenied" ||
+        name === "InvalidAccessKeyId" ||
+        name === "SignatureDoesNotMatch" ||
+        name === "ExpiredToken"
       ) {
-        return new StorageProviderError(
-          'permission',
-          'Storage access denied',
-        );
+        return new StorageProviderError("permission", "Storage access denied");
       }
-      if (name === 'NoSuchBucket') {
+      if (name === "NoSuchBucket") {
         return new StorageProviderError(
-          'unavailable',
-          'Storage bucket is not available',
+          "unavailable",
+          "Storage bucket is not available",
         );
       }
       return new StorageProviderError(
-        'unavailable',
-        'Storage service temporarily unavailable',
+        "unavailable",
+        "Storage service temporarily unavailable",
       );
     }
 
     if (
       error instanceof Error &&
-      (error.name === 'TimeoutError' ||
-        error.name === 'AbortError' ||
-        error.message.includes('timeout'))
+      (error.name === "TimeoutError" ||
+        error.name === "AbortError" ||
+        error.message.includes("timeout"))
     ) {
       this.logger.warn(`S3 ${operation} timed out`);
-      return new StorageProviderError('timeout', 'Storage request timed out');
+      return new StorageProviderError("timeout", "Storage request timed out");
     }
 
     this.logger.warn(
-      `S3 ${operation} failed: ${error instanceof Error ? error.message : 'unknown'}`,
+      `S3 ${operation} failed: ${error instanceof Error ? error.message : "unknown"}`,
     );
     return new StorageProviderError(
-      'unavailable',
-      'Storage service temporarily unavailable',
+      "unavailable",
+      "Storage service temporarily unavailable",
     );
   }
 }

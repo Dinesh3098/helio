@@ -1,17 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import {
-  HelpArticle,
-  HelpCategory,
-  Workspace,
-} from '../../database/entities';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { HelpArticle, HelpCategory, Workspace } from "../../database/entities";
 import {
   PublicArticleDto,
   PublicArticleSummaryDto,
   PublicHelpCenterDto,
-} from './dto/public-help.dto';
-import { KbArticlesService } from './kb-articles.service';
+} from "./dto/public-help.dto";
+import { KbArticlesService } from "./kb-articles.service";
 
 /**
  * Unauthenticated help-center reads. Every query is pinned to a validated
@@ -36,7 +32,7 @@ export class PublicHelpService {
     const [categories, articles] = await Promise.all([
       this.categoriesRepository.find({
         where: { workspaceId },
-        order: { displayOrder: 'ASC', name: 'ASC' },
+        order: { displayOrder: "ASC", name: "ASC" },
       }),
       this.articlesRepository.find({
         where: { workspaceId, isPublished: true },
@@ -48,7 +44,7 @@ export class PublicHelpService {
           excerpt: true,
           updatedAt: true,
         },
-        order: { updatedAt: 'DESC' },
+        order: { updatedAt: "DESC" },
       }),
     ]);
 
@@ -82,7 +78,7 @@ export class PublicHelpService {
       relations: { category: true },
     });
     if (!article) {
-      throw new NotFoundException('Article not found');
+      throw new NotFoundException("Article not found");
     }
     return {
       ...this.toSummary(article),
@@ -100,9 +96,9 @@ export class PublicHelpService {
     await this.requireWorkspace(workspaceId);
 
     const qb = this.articlesRepository
-      .createQueryBuilder('a')
-      .where('a.workspace_id = :workspaceId', { workspaceId })
-      .andWhere('a.is_published = true')
+      .createQueryBuilder("a")
+      .where("a.workspace_id = :workspaceId", { workspaceId })
+      .andWhere("a.is_published = true")
       .limit(limit);
     // Same weighted FTS the dashboard uses.
     this.articlesService.applySearch(qb, terms);
@@ -116,7 +112,7 @@ export class PublicHelpService {
       where: { id: workspaceId },
     });
     if (!workspace) {
-      throw new NotFoundException('Workspace not found');
+      throw new NotFoundException("Workspace not found");
     }
     return workspace;
   }

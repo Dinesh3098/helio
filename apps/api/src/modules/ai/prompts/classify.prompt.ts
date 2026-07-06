@@ -4,8 +4,8 @@ export interface ClassifyPromptInput {
 
 /** Categories/enums the model must choose from — mirrored in the DTO. */
 export const CLASSIFY_SCHEMA = {
-  priorities: ['LOW', 'MEDIUM', 'HIGH'] as const,
-  sentiments: ['POSITIVE', 'NEUTRAL', 'NEGATIVE'] as const,
+  priorities: ["LOW", "MEDIUM", "HIGH"] as const,
+  sentiments: ["POSITIVE", "NEUTRAL", "NEGATIVE"] as const,
 };
 
 export function classifyPrompt(input: ClassifyPromptInput): string {

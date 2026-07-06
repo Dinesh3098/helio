@@ -5,8 +5,8 @@ import {
   HttpException,
   HttpStatus,
   Logger,
-} from '@nestjs/common';
-import { HttpAdapterHost } from '@nestjs/core';
+} from "@nestjs/common";
+import { HttpAdapterHost } from "@nestjs/core";
 
 /**
  * Catch-all exception filter: known HttpExceptions pass through with their
@@ -31,10 +31,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const payload = isHttpException
       ? exception.getResponse()
-      : { statusCode: status, message: 'Internal server error' };
+      : { statusCode: status, message: "Internal server error" };
 
     const body = {
-      ...(typeof payload === 'string'
+      ...(typeof payload === "string"
         ? { statusCode: status, message: payload }
         : payload),
       timestamp: new Date().toISOString(),

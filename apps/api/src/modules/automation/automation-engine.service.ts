@@ -1,22 +1,19 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import {
   AutomationExecution,
   AutomationExecutionStatus,
   AutomationRule,
   Conversation,
-} from '../../database/entities';
+} from "../../database/entities";
 import {
   ConversationEvent,
   ConversationEventsService,
-} from '../../events/conversation-events.service';
-import { AutomationEvaluator } from './automation-evaluator.service';
-import { AutomationExecutor } from './automation-executor.service';
-import {
-  AutomationAction,
-  AutomationCondition,
-} from './automation.types';
+} from "../../events/conversation-events.service";
+import { AutomationEvaluator } from "./automation-evaluator.service";
+import { AutomationExecutor } from "./automation-executor.service";
+import { AutomationAction, AutomationCondition } from "./automation.types";
 
 export interface RuleRunResult {
   matched: boolean;
@@ -59,7 +56,7 @@ export class AutomationEngineService implements OnModuleInit {
         trigger: event.trigger,
       },
       // Deterministic order: oldest rule first.
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
     });
     if (rules.length === 0) return;
 
@@ -80,7 +77,7 @@ export class AutomationEngineService implements OnModuleInit {
   async runRule(
     rule: AutomationRule,
     conversation: Conversation,
-    message?: ConversationEvent['message'],
+    message?: ConversationEvent["message"],
   ): Promise<RuleRunResult> {
     const matched = this.evaluator.matches(
       // Validated at write time; jsonb round-trips the same shape.
@@ -106,7 +103,7 @@ export class AutomationEngineService implements OnModuleInit {
     } catch (caught) {
       status = AutomationExecutionStatus.FAILED;
       error =
-        caught instanceof Error ? caught.message : 'Unknown execution error';
+        caught instanceof Error ? caught.message : "Unknown execution error";
       this.logger.warn(
         `rule "${rule.name}" (${rule.id}) failed on conversation ${conversation.id}: ${error}`,
       );

@@ -120,77 +120,81 @@ export function Composer(props: ComposerProps) {
         </div>
       )}
       <div className="helio-composer">
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        hidden
-        accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,.doc,.docx,.txt,.csv"
-        onChange={(event) => {
-          const input = event.target as HTMLInputElement;
-          if (input.files?.length) props.onAddFiles(input.files);
-          input.value = "";
-        }}
-      />
-      <button
-        type="button"
-        className="helio-attach"
-        aria-label="Attach a file"
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M21 12.5l-8.5 8.5a6 6 0 01-8.5-8.5L12.5 4a4 4 0 015.7 5.7L9.7 18.2a2 2 0 01-2.9-2.9l7.8-7.8"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-          />
-        </svg>
-      </button>
-      <textarea
-        className="helio-input"
-        rows={1}
-        maxLength={10000}
-        placeholder="Write a message…"
-        aria-label="Message"
-        value={props.draft}
-        onInput={(event) => {
-          const value = (event.target as HTMLTextAreaElement).value;
-          props.onDraftChange(value);
-          if (value) emitTyping();
-          else stopTyping();
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            submit();
-          }
-        }}
-      />
-      <button
-        type="submit"
-        className="helio-send"
-        aria-label="Send message"
-        disabled={
-          (!props.draft.trim() && !hasReadyFiles) ||
-          props.sending ||
-          uploading
-        }
-      >
-        {props.sending || uploading ? (
-          <span className="helio-spinner" role="status" aria-label="Sending" />
-        ) : (
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          hidden
+          accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,.doc,.docx,.txt,.csv"
+          onChange={(event) => {
+            const input = event.target as HTMLInputElement;
+            if (input.files?.length) props.onAddFiles(input.files);
+            input.value = "";
+          }}
+        />
+        <button
+          type="button"
+          className="helio-attach"
+          aria-label="Attach a file"
+          onClick={() => fileInputRef.current?.click()}
+        >
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
-              d="M4 12l16-7-4.5 7L20 19 4 12Z"
-              fill="currentColor"
+              d="M21 12.5l-8.5 8.5a6 6 0 01-8.5-8.5L12.5 4a4 4 0 015.7 5.7L9.7 18.2a2 2 0 01-2.9-2.9l7.8-7.8"
               stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinejoin="round"
+              strokeWidth="1.8"
+              strokeLinecap="round"
             />
           </svg>
-        )}
-      </button>
+        </button>
+        <textarea
+          className="helio-input"
+          rows={1}
+          maxLength={10000}
+          placeholder="Write a message…"
+          aria-label="Message"
+          value={props.draft}
+          onInput={(event) => {
+            const value = (event.target as HTMLTextAreaElement).value;
+            props.onDraftChange(value);
+            if (value) emitTyping();
+            else stopTyping();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              submit();
+            }
+          }}
+        />
+        <button
+          type="submit"
+          className="helio-send"
+          aria-label="Send message"
+          disabled={
+            (!props.draft.trim() && !hasReadyFiles) ||
+            props.sending ||
+            uploading
+          }
+        >
+          {props.sending || uploading ? (
+            <span
+              className="helio-spinner"
+              role="status"
+              aria-label="Sending"
+            />
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 12l16-7-4.5 7L20 19 4 12Z"
+                fill="currentColor"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </button>
       </div>
     </form>
   );

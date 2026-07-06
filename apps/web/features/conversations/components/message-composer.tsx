@@ -99,7 +99,8 @@ export function MessageComposer({
     <div
       className={cn(
         "border-t transition-colors",
-        dragActive && "bg-primary/5 outline-primary/40 outline-2 -outline-offset-2 outline-dashed",
+        dragActive &&
+          "bg-primary/5 outline-primary/40 outline-2 -outline-offset-2 outline-dashed",
       )}
       onDragOver={(e) => {
         if (!attachmentsEnabled) return;

@@ -6,9 +6,7 @@ export interface SuggestedReplyPromptInput {
   instructions?: string;
 }
 
-export function suggestedReplyPrompt(
-  input: SuggestedReplyPromptInput,
-): string {
+export function suggestedReplyPrompt(input: SuggestedReplyPromptInput): string {
   return `You are drafting a reply for "${input.agentName}", a support agent at "${input.workspaceName}", to send to the customer "${input.contactName}".
 
 Rules:
@@ -18,7 +16,7 @@ Rules:
 - If information is missing, ask the customer for it politely.${
     input.instructions
       ? `\n- Additional instructions from the agent: ${input.instructions}`
-      : ''
+      : ""
   }
 
 Conversation:

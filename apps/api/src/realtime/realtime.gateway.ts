@@ -1,4 +1,4 @@
-import { Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Logger, UseFilters, UsePipes, ValidationPipe } from "@nestjs/common";
 import {
   ConnectedSocket,
   MessageBody,
@@ -9,32 +9,32 @@ import {
   WebSocketGateway,
   WebSocketServer,
   WsException,
-} from '@nestjs/websockets';
-import type { Server, Socket } from 'socket.io';
-import type { AuthenticatedUser } from '../common/interfaces/authenticated-user.interface';
-import { corsOriginSetting } from '../config/configuration';
-import { AuthService } from '../modules/auth/auth.service';
-import { ConversationsService } from '../modules/conversations/conversations.service';
-import { MessageResponseDto } from '../modules/messages/dto/message-response.dto';
-import { MessagesService } from '../modules/messages/messages.service';
-import type { VisitorPrincipal } from '../modules/widget/interfaces/visitor-principal.interface';
-import { WidgetAuthService } from '../modules/widget/widget-auth.service';
-import { WorkspaceMembersService } from '../modules/workspace-members/workspace-members.service';
-import { ConnectionRegistryService } from './connection-registry.service';
-import { RealtimeEmitterService } from './realtime-emitter.service';
+} from "@nestjs/websockets";
+import type { Server, Socket } from "socket.io";
+import type { AuthenticatedUser } from "../common/interfaces/authenticated-user.interface";
+import { corsOriginSetting } from "../config/configuration";
+import { AuthService } from "../modules/auth/auth.service";
+import { ConversationsService } from "../modules/conversations/conversations.service";
+import { MessageResponseDto } from "../modules/messages/dto/message-response.dto";
+import { MessagesService } from "../modules/messages/messages.service";
+import type { VisitorPrincipal } from "../modules/widget/interfaces/visitor-principal.interface";
+import { WidgetAuthService } from "../modules/widget/widget-auth.service";
+import { WorkspaceMembersService } from "../modules/workspace-members/workspace-members.service";
+import { ConnectionRegistryService } from "./connection-registry.service";
+import { RealtimeEmitterService } from "./realtime-emitter.service";
 import {
   ConversationRoomDto,
   SendMessageWsDto,
   WorkspaceRoomDto,
-} from './dto/ws-payloads.dto';
+} from "./dto/ws-payloads.dto";
 import {
   CLIENT_EVENTS,
   conversationRoom,
   SERVER_EVENTS,
   workspaceRoom,
-} from './realtime.events';
-import { SocketRateLimiter } from './socket-rate-limiter';
-import { WsExceptionsFilter } from './ws-exceptions.filter';
+} from "./realtime.events";
+import { SocketRateLimiter } from "./socket-rate-limiter";
+import { WsExceptionsFilter } from "./ws-exceptions.filter";
 
 /**
  * Two principals share one gateway: dashboard agents (JWT access token in
@@ -48,9 +48,7 @@ interface SocketPrincipals {
 
 type GatewaySocket = Socket & { data: SocketPrincipals };
 
-type SendMessageAck =
-  | { message: MessageResponseDto }
-  | { error: string };
+type SendMessageAck = { message: MessageResponseDto } | { error: string };
 
 /**
  * Transport layer only: every business decision (tenancy, resolved
@@ -75,7 +73,7 @@ type SendMessageAck =
     transform: true,
     exceptionFactory: (errors) =>
       new WsException(
-        Object.values(errors[0]?.constraints ?? {})[0] ?? 'Invalid payload',
+        Object.values(errors[0]?.constraints ?? {})[0] ?? "Invalid payload",
       ),
   }),
 )
@@ -117,31 +115,33 @@ export class RealtimeGateway
     });
   }
 
-  private async authenticate(client: GatewaySocket): Promise<Error | undefined> {
+  private async authenticate(
+    client: GatewaySocket,
+  ): Promise<Error | undefined> {
     const auth = client.handshake.auth as {
       token?: unknown;
       visitorToken?: unknown;
     };
 
-    if (typeof auth.visitorToken === 'string') {
+    if (typeof auth.visitorToken === "string") {
       const visitor = await this.widgetAuthService.verifyVisitorToken(
         auth.visitorToken,
       );
       if (!visitor) {
         this.logger.warn(`socket ${client.id} rejected: invalid visitor token`);
-        return new Error('Unauthorized');
+        return new Error("Unauthorized");
       }
       client.data.visitor = visitor;
       return undefined;
     }
 
     const user =
-      typeof auth.token === 'string'
+      typeof auth.token === "string"
         ? await this.authService.verifyAccessToken(auth.token)
         : null;
     if (!user) {
       this.logger.warn(`socket ${client.id} rejected: invalid token`);
-      return new Error('Unauthorized');
+      return new Error("Unauthorized");
     }
     client.data.user = user;
     return undefined;
@@ -202,17 +202,20 @@ export class RealtimeGateway
     this.throttle(client, CLIENT_EVENTS.joinWorkspace, 20, 10_000);
     const user = client.data.user;
     if (!user) {
-      throw new WsException('Unauthorized');
+      throw new WsException("Unauthorized");
     }
     const membership = await this.workspaceMembersService.findMembership(
       payload.workspaceId,
       user.id,
     );
     if (!membership) {
-      throw new WsException('You are not a member of this workspace');
+      throw new WsException("You are not a member of this workspace");
     }
     for (const room of client.rooms) {
-      if (room.startsWith('workspace:') && room !== workspaceRoom(payload.workspaceId)) {
+      if (
+        room.startsWith("workspace:") &&
+        room !== workspaceRoom(payload.workspaceId)
+      ) {
         await client.leave(room);
       }
     }
@@ -264,20 +267,17 @@ export class RealtimeGateway
       );
 
       const message = client.data.visitor
-        ? await this.messagesService.createContactMessage(
-            client.data.visitor,
-            {
-              content: payload.content ?? '',
-              attachmentIds: payload.attachmentIds,
-            },
-          )
+        ? await this.messagesService.createContactMessage(client.data.visitor, {
+            content: payload.content ?? "",
+            attachmentIds: payload.attachmentIds,
+          })
         : await this.messagesService.createAgentMessage(
             // authorizeConversation guarantees one principal exists.
             client.data.user as AuthenticatedUser,
             workspaceId,
             payload.conversationId,
             {
-              content: payload.content ?? '',
+              content: payload.content ?? "",
               attachmentIds: payload.attachmentIds,
             },
           );
@@ -334,7 +334,7 @@ export class RealtimeGateway
     payload: ConversationRoomDto,
     event: string,
   ): void {
-    if (!this.limiter.allow(client, 'typing', 15, 5_000)) return;
+    if (!this.limiter.allow(client, "typing", 15, 5_000)) return;
 
     const room = conversationRoom(payload.conversationId);
     if (!client.rooms.has(room)) return;
@@ -342,8 +342,8 @@ export class RealtimeGateway
     const sender = client.data.user
       ? { userId: client.data.user.id, name: client.data.user.name }
       : {
-          userId: client.data.visitor?.contactId ?? '',
-          name: client.data.visitor?.name ?? 'Visitor',
+          userId: client.data.visitor?.contactId ?? "",
+          name: client.data.visitor?.name ?? "Visitor",
         };
 
     client.to(room).emit(event, {
@@ -366,21 +366,19 @@ export class RealtimeGateway
 
     if (visitor) {
       if (conversationId !== visitor.conversationId) {
-        throw new WsException(
-          'You do not have access to this conversation',
-        );
+        throw new WsException("You do not have access to this conversation");
       }
       return visitor.workspaceId;
     }
 
     if (!user) {
-      throw new WsException('Unauthorized');
+      throw new WsException("Unauthorized");
     }
 
     const workspaceId =
       await this.conversationsService.getWorkspaceId(conversationId);
     if (!workspaceId) {
-      throw new WsException('Conversation not found');
+      throw new WsException("Conversation not found");
     }
 
     const membership = await this.workspaceMembersService.findMembership(
@@ -388,7 +386,7 @@ export class RealtimeGateway
       user.id,
     );
     if (!membership) {
-      throw new WsException('You do not have access to this conversation');
+      throw new WsException("You do not have access to this conversation");
     }
     return workspaceId;
   }
@@ -400,18 +398,18 @@ export class RealtimeGateway
     windowMs: number,
   ): void {
     if (!this.limiter.allow(client, event, maxEvents, windowMs)) {
-      throw new WsException('Too many requests — slow down.');
+      throw new WsException("Too many requests — slow down.");
     }
   }
 
   private errorMessage(error: unknown): string {
     if (error instanceof WsException) {
       const err = error.getError();
-      return typeof err === 'string' ? err : error.message;
+      return typeof err === "string" ? err : error.message;
     }
     if (error instanceof Error && error.message) {
       return error.message;
     }
-    return 'Something went wrong';
+    return "Something went wrong";
   }
 }

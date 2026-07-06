@@ -1,0 +1,108 @@
+# Helio release pipeline — builds, tags, and pushes production images.
+#
+# Triggered by version tags (v1.2.3) or manually via workflow_dispatch.
+#
+# Registry configuration (no registry is hardcoded):
+#   Repository/organization VARIABLE:
+#     CONTAINER_REGISTRY  e.g. "ghcr.io/dinesh3098"  or  "docker.io/<user>"
+#                         (defaults to ghcr.io/<repo owner> when unset)
+#   Repository SECRETS (Settings → Secrets and variables → Actions):
+#     REGISTRY_USERNAME   registry login user
+#                         (for ghcr.io you can omit both secrets — the
+#                         workflow falls back to github.actor + GITHUB_TOKEN)
+#     REGISTRY_PASSWORD   registry token/password
+#                         (DockerHub: an access token, never your password)
+#
+# Images produced:
+#   <registry>/helio-api:<version>, :<sha>, :latest
+#   <registry>/helio-web:<version>, :<sha>, :latest
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: read
+  packages: write # allows the GITHUB_TOKEN fallback to push to ghcr.io
+
+env:
+  REGISTRY: ${{ vars.CONTAINER_REGISTRY || format('ghcr.io/{0}', github.repository_owner) }}
+
+jobs:
+  verify:
+    name: Verify before release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm check-types
+      - run: pnpm build
+
+  images:
+    name: Build & push ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    needs: verify
+    strategy:
+      matrix:
+        include:
+          - image: helio-api
+            dockerfile: apps/api/Dockerfile
+          - image: helio-web
+            dockerfile: apps/web/Dockerfile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to container registry
+        uses: docker/login-action@v4
+        with:
+          # For DockerHub set CONTAINER_REGISTRY to docker.io/<user> —
+          # the registry host is everything before the first slash.
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME || github.actor }}
+          password: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
+
+      - name: Build timestamp
+        id: build_date
+        run: echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Image metadata (tags & labels)
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=sha,format=short
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            BUILD_DATE=${{ steps.build_date.outputs.date }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max

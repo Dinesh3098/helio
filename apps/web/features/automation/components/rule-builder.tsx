@@ -141,9 +141,7 @@ export function RuleBuilderDialog({
   }, [open, rule?.id]);
 
   const patchCondition = (index: number, next: AutomationCondition) =>
-    setConditions((current) =>
-      current.map((c, i) => (i === index ? next : c)),
-    );
+    setConditions((current) => current.map((c, i) => (i === index ? next : c)));
   const patchAction = (index: number, next: AutomationAction) =>
     setActions((current) => current.map((a, i) => (i === index ? next : a)));
 
@@ -170,7 +168,9 @@ export function RuleBuilderDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{rule ? "Edit rule" : "New automation rule"}</DialogTitle>
+          <DialogTitle>
+            {rule ? "Edit rule" : "New automation rule"}
+          </DialogTitle>
           <DialogDescription>
             When the trigger fires and all conditions match, actions run in
             order.
@@ -314,9 +314,7 @@ export function RuleBuilderDialog({
                     className="flex-1"
                     value={condition.value}
                     placeholder={
-                      condition.type === "emailDomain"
-                        ? "gmail.com"
-                        : "refund"
+                      condition.type === "emailDomain" ? "gmail.com" : "refund"
                     }
                     aria-label="Condition value"
                     onChange={(e) =>

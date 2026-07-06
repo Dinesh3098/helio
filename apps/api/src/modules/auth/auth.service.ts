@@ -2,26 +2,26 @@ import {
   ConflictException,
   Injectable,
   UnauthorizedException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import bcrypt from 'bcrypt';
-import { DataSource, QueryFailedError } from 'typeorm';
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import bcrypt from "bcrypt";
+import { DataSource, QueryFailedError } from "typeorm";
 import {
   User,
   Workspace,
   WorkspaceMember,
   WorkspaceMemberRole,
-} from '../../database/entities';
-import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
-import { AuditService } from '../audit/audit.service';
-import { SessionsService } from '../sessions/sessions.service';
-import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/login.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { SignupDto } from './dto/signup.dto';
+} from "../../database/entities";
+import type { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
+import { AuditService } from "../audit/audit.service";
+import { SessionsService } from "../sessions/sessions.service";
+import { UsersService } from "../users/users.service";
+import { LoginDto } from "./dto/login.dto";
+import { RefreshTokenDto } from "./dto/refresh-token.dto";
+import { SignupDto } from "./dto/signup.dto";
 
 const BCRYPT_ROUNDS = 12;
-const PG_UNIQUE_VIOLATION = '23505';
+const PG_UNIQUE_VIOLATION = "23505";
 
 export interface PublicUser {
   id: string;
@@ -53,13 +53,15 @@ export class AuthService {
    * User + workspace + OWNER membership + session are created atomically —
    * a failure at any step leaves no partial account behind.
    */
-  async signup(dto: SignupDto): Promise<
+  async signup(
+    dto: SignupDto,
+  ): Promise<
     AuthTokens & { user: PublicUser; workspace: { id: string; name: string } }
   > {
     const email = dto.email.toLowerCase();
 
     if (await this.usersService.findByEmail(email)) {
-      throw new ConflictException('Email is already registered');
+      throw new ConflictException("Email is already registered");
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
@@ -102,7 +104,7 @@ export class AuthService {
       // Concurrent signup with the same email slips past the pre-check and
       // hits the unique constraint instead.
       if (this.isUniqueViolation(error)) {
-        throw new ConflictException('Email is already registered');
+        throw new ConflictException("Email is already registered");
       }
       throw error;
     }
@@ -111,9 +113,9 @@ export class AuthService {
     this.auditService.record({
       workspaceId: workspace.id,
       actorUserId: user.id,
-      resourceType: 'auth',
+      resourceType: "auth",
       resourceId: user.id,
-      action: 'auth.signup',
+      action: "auth.signup",
       metadata: { email: user.email, workspaceName: workspace.name },
     });
     return {
@@ -131,10 +133,10 @@ export class AuthService {
 
     // Same error for unknown email and wrong password — no account probing.
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
     if (!user.isActive) {
-      throw new UnauthorizedException('Account is deactivated');
+      throw new UnauthorizedException("Account is deactivated");
     }
 
     const refreshToken = this.sessionsService.generateRefreshToken();
@@ -144,9 +146,9 @@ export class AuthService {
     this.auditService.record({
       workspaceId: null,
       actorUserId: user.id,
-      resourceType: 'auth',
+      resourceType: "auth",
       resourceId: user.id,
-      action: 'auth.login',
+      action: "auth.login",
       metadata: { email: user.email },
     });
     return { user: this.toPublicUser(user), accessToken, refreshToken };
@@ -157,12 +159,12 @@ export class AuthService {
       dto.refreshToken,
     );
     if (!session) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException("Invalid or expired refresh token");
     }
 
     const user = await this.usersService.findById(session.userId);
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('Account is deactivated');
+      throw new UnauthorizedException("Account is deactivated");
     }
 
     const refreshToken = await this.sessionsService.rotate(session);
@@ -180,9 +182,9 @@ export class AuthService {
       this.auditService.record({
         workspaceId: null,
         actorUserId: session.userId,
-        resourceType: 'auth',
+        resourceType: "auth",
         resourceId: session.userId,
-        action: 'auth.logout',
+        action: "auth.logout",
       });
     }
   }
@@ -209,7 +211,10 @@ export class AuthService {
    * Access token carries identity only (sub + email) — roles are resolved
    * from workspace_members per request, never baked into the JWT.
    */
-  private async signAccessToken(userId: string, email: string): Promise<string> {
+  private async signAccessToken(
+    userId: string,
+    email: string,
+  ): Promise<string> {
     return this.jwtService.signAsync({ sub: userId, email });
   }
 

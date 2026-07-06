@@ -65,7 +65,6 @@ export function sendMessageRest(
   });
 }
 
-
 export interface UploadHandle {
   promise: Promise<{ id: string; filename: string; size: number }>;
   abort: () => void;

@@ -2,16 +2,16 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { HelpArticle, HelpCategory } from '../../database/entities';
-import { AuditService } from '../audit/audit.service';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { HelpArticle, HelpCategory } from "../../database/entities";
+import { AuditService } from "../audit/audit.service";
 import {
   CategoryResponseDto,
   CreateCategoryDto,
   UpdateCategoryDto,
-} from './dto/category.dto';
+} from "./dto/category.dto";
 
 @Injectable()
 export class KbCategoriesService {
@@ -26,21 +26,18 @@ export class KbCategoriesService {
   async list(workspaceId: string): Promise<CategoryResponseDto[]> {
     const categories = await this.categoriesRepository.find({
       where: { workspaceId },
-      order: { displayOrder: 'ASC', name: 'ASC' },
+      order: { displayOrder: "ASC", name: "ASC" },
     });
     if (categories.length === 0) return [];
 
     // One grouped query for all counts — no per-category roundtrips.
     const counts = await this.articlesRepository
-      .createQueryBuilder('a')
-      .select('a.category_id', 'categoryId')
-      .addSelect('COUNT(*)::int', 'total')
-      .addSelect(
-        "COUNT(*) FILTER (WHERE a.is_published)::int",
-        'published',
-      )
-      .where('a.workspace_id = :workspaceId', { workspaceId })
-      .groupBy('a.category_id')
+      .createQueryBuilder("a")
+      .select("a.category_id", "categoryId")
+      .addSelect("COUNT(*)::int", "total")
+      .addSelect("COUNT(*) FILTER (WHERE a.is_published)::int", "published")
+      .where("a.workspace_id = :workspaceId", { workspaceId })
+      .groupBy("a.category_id")
       .getRawMany<{ categoryId: string; total: number; published: number }>();
     const byCategory = new Map(counts.map((c) => [c.categoryId, c]));
 
@@ -77,7 +74,7 @@ export class KbCategoriesService {
       where: { workspaceId, name: dto.name },
     });
     if (existing) {
-      throw new ConflictException('A category with this name already exists');
+      throw new ConflictException("A category with this name already exists");
     }
 
     const category = await this.categoriesRepository.save(
@@ -89,9 +86,9 @@ export class KbCategoriesService {
     );
     this.auditService.record({
       workspaceId,
-      resourceType: 'kb_category',
+      resourceType: "kb_category",
       resourceId: category.id,
-      action: 'kb.category_created',
+      action: "kb.category_created",
       metadata: { name: category.name },
     });
     return { ...this.toBase(category), articlesCount: 0, publishedCount: 0 };
@@ -109,9 +106,7 @@ export class KbCategoriesService {
         where: { workspaceId, name: dto.name },
       });
       if (duplicate) {
-        throw new ConflictException(
-          'A category with this name already exists',
-        );
+        throw new ConflictException("A category with this name already exists");
       }
       category.name = dto.name;
     }
@@ -121,9 +116,9 @@ export class KbCategoriesService {
     await this.categoriesRepository.save(category);
     this.auditService.record({
       workspaceId,
-      resourceType: 'kb_category',
+      resourceType: "kb_category",
       resourceId: category.id,
-      action: 'kb.category_updated',
+      action: "kb.category_updated",
       metadata: { name: category.name },
     });
 
@@ -144,16 +139,16 @@ export class KbCategoriesService {
     // Explicit 409 beats surfacing the FK RESTRICT as a 500.
     if (articlesCount > 0) {
       throw new ConflictException(
-        'Move or delete the articles in this category first',
+        "Move or delete the articles in this category first",
       );
     }
     const removed = { id: categoryId, name: category.name };
     await this.categoriesRepository.remove(category);
     this.auditService.record({
       workspaceId,
-      resourceType: 'kb_category',
+      resourceType: "kb_category",
       resourceId: removed.id,
-      action: 'kb.category_deleted',
+      action: "kb.category_deleted",
       metadata: { name: removed.name },
     });
   }
@@ -166,7 +161,7 @@ export class KbCategoriesService {
       where: { id: categoryId, workspaceId },
     });
     if (!category) {
-      throw new NotFoundException('Category not found');
+      throw new NotFoundException("Category not found");
     }
     return category;
   }

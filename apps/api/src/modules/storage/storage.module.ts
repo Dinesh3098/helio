@@ -1,10 +1,10 @@
-import { Module, Provider } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AppConfig } from '../../config/configuration';
-import { LocalStorageProvider } from './providers/local-storage.provider';
-import { S3StorageProvider } from './providers/s3-storage.provider';
-import { STORAGE_PROVIDER } from './providers/storage-provider.interface';
-import { StorageService } from './storage.service';
+import { Module, Provider } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { AppConfig } from "../../config/configuration";
+import { LocalStorageProvider } from "./providers/local-storage.provider";
+import { S3StorageProvider } from "./providers/s3-storage.provider";
+import { STORAGE_PROVIDER } from "./providers/storage-provider.interface";
+import { StorageService } from "./storage.service";
 
 /**
  * Provider selection is pure configuration: STORAGE_PROVIDER=s3|local.
@@ -18,8 +18,7 @@ const storageProviderFactory: Provider = {
     config: ConfigService<AppConfig, true>,
     s3: S3StorageProvider,
     local: LocalStorageProvider,
-  ) =>
-    config.get('storage.provider', { infer: true }) === 's3' ? s3 : local,
+  ) => (config.get("storage.provider", { infer: true }) === "s3" ? s3 : local),
 };
 
 @Module({

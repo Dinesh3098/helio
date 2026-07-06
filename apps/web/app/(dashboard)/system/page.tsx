@@ -1,22 +1,11 @@
 "use client";
 
-import {
-  Activity,
-  Cpu,
-  Radio,
-  ShieldAlert,
-  Timer,
-} from "lucide-react";
+import { Activity, Cpu, Radio, ShieldAlert, Timer } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSystemStatus } from "@/features/observability/hooks";
 import { useCurrentMember } from "@/features/workspace/hooks";
@@ -138,7 +127,9 @@ export default function SystemHealthPage() {
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Memory (RSS)</span>
-                <span className="font-medium">{status.data.memory.rssMb} MB</span>
+                <span className="font-medium">
+                  {status.data.memory.rssMb} MB
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Heap</span>

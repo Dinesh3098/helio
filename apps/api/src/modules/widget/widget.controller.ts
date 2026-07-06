@@ -13,8 +13,8 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import {
   ApiBearerAuth,
   ApiBody,
@@ -23,32 +23,32 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
-} from '@nestjs/swagger';
-import type { Response } from 'express';
-import { tmpdir } from 'node:os';
-import { AttachmentsService } from '../attachments/attachments.service';
-import { AttachmentResponseDto } from '../attachments/dto/attachment.dto';
-import { CreateMessageDto } from '../messages/dto/create-message.dto';
+} from "@nestjs/swagger";
+import type { Response } from "express";
+import { tmpdir } from "node:os";
+import { AttachmentsService } from "../attachments/attachments.service";
+import { AttachmentResponseDto } from "../attachments/dto/attachment.dto";
+import { CreateMessageDto } from "../messages/dto/create-message.dto";
 import {
   MessageResponseDto,
   MessagesPageDto,
-} from '../messages/dto/message-response.dto';
-import { QueryMessagesDto } from '../messages/dto/query-messages.dto';
-import { MessagesService } from '../messages/messages.service';
-import { CurrentVisitor } from './decorators/current-visitor.decorator';
-import { CreateWidgetSessionDto } from './dto/create-widget-session.dto';
-import { WidgetSessionResponseDto } from './dto/widget-session-response.dto';
-import type { VisitorPrincipal } from './interfaces/visitor-principal.interface';
-import { WidgetAuthGuard } from './widget-auth.guard';
-import { WidgetService } from './widget.service';
+} from "../messages/dto/message-response.dto";
+import { QueryMessagesDto } from "../messages/dto/query-messages.dto";
+import { MessagesService } from "../messages/messages.service";
+import { CurrentVisitor } from "./decorators/current-visitor.decorator";
+import { CreateWidgetSessionDto } from "./dto/create-widget-session.dto";
+import { WidgetSessionResponseDto } from "./dto/widget-session-response.dto";
+import type { VisitorPrincipal } from "./interfaces/visitor-principal.interface";
+import { WidgetAuthGuard } from "./widget-auth.guard";
+import { WidgetService } from "./widget.service";
 
 /**
  * Public, unauthenticated-visitor surface for the embeddable chat widget.
  * Conversation scope always comes from the visitor token — never from
  * request parameters.
  */
-@ApiTags('widget')
-@Controller('widget')
+@ApiTags("widget")
+@Controller("widget")
 export class WidgetController {
   constructor(
     private readonly widgetService: WidgetService,
@@ -56,12 +56,12 @@ export class WidgetController {
     private readonly attachmentsService: AttachmentsService,
   ) {}
 
-  @Post('session')
+  @Post("session")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Bootstrap a visitor session (find-or-create, idempotent)',
+    summary: "Bootstrap a visitor session (find-or-create, idempotent)",
     description:
-      'Resolves the contact behind a stable visitorId and its active chat conversation, creating either on demand, and issues a visitor token.',
+      "Resolves the contact behind a stable visitorId and its active chat conversation, creating either on demand, and issues a visitor token.",
   })
   @ApiOkResponse({ type: WidgetSessionResponseDto })
   createSession(
@@ -70,7 +70,7 @@ export class WidgetController {
     return this.widgetService.createSession(dto);
   }
 
-  @Get('messages')
+  @Get("messages")
   @UseGuards(WidgetAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -88,22 +88,22 @@ export class WidgetController {
     );
   }
 
-  @Post('attachments')
+  @Post("attachments")
   @UseGuards(WidgetAuthGuard)
   @ApiBearerAuth()
   @UseInterceptors(
-    FileInterceptor('file', {
+    FileInterceptor("file", {
       // Disk storage — see AttachmentsController; memory is never used.
       dest: tmpdir(),
       limits: { fileSize: 100 * 1024 * 1024, files: 1 },
     }),
   )
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
-      type: 'object',
-      required: ['file'],
-      properties: { file: { type: 'string', format: 'binary' } },
+      type: "object",
+      required: ["file"],
+      properties: { file: { type: "string", format: "binary" } },
     },
   })
   @ApiOperation({
@@ -129,7 +129,7 @@ export class WidgetController {
     });
   }
 
-  @Get('attachments/:id/download')
+  @Get("attachments/:id/download")
   @UseGuards(WidgetAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -137,7 +137,7 @@ export class WidgetController {
   })
   async downloadAttachment(
     @CurrentVisitor() visitor: VisitorPrincipal,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Res() response: Response,
   ): Promise<void> {
     const { attachment, download } = await this.attachmentsService.download(
@@ -146,25 +146,25 @@ export class WidgetController {
     );
     // Visitors may only reach files in their own pinned conversation.
     if (attachment.conversationId !== visitor.conversationId) {
-      throw new BadRequestException('Attachment not found');
+      throw new BadRequestException("Attachment not found");
     }
-    if (download.kind === 'url') {
+    if (download.kind === "url") {
       response.redirect(HttpStatus.FOUND, download.url);
       return;
     }
-    response.setHeader('Content-Type', attachment.mimeType);
+    response.setHeader("Content-Type", attachment.mimeType);
     response.setHeader(
-      'Content-Disposition',
+      "Content-Disposition",
       `attachment; filename="${attachment.filename}"`,
     );
     download.stream.pipe(response);
   }
 
-  @Post('messages')
+  @Post("messages")
   @UseGuards(WidgetAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Send a visitor message (REST fallback for the socket path)',
+    summary: "Send a visitor message (REST fallback for the socket path)",
   })
   @ApiCreatedResponse({ type: MessageResponseDto })
   createMessage(

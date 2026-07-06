@@ -50,6 +50,10 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      args:
+        # Release metadata shown by /health; CI passes real values.
+        GIT_SHA: ${GIT_SHA:-}
+        BUILD_DATE: ${BUILD_DATE:-}
     restart: unless-stopped
     depends_on:
       postgres:

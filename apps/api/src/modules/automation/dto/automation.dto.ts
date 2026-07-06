@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import {
   IsArray,
   IsBoolean,
@@ -11,14 +11,14 @@ import {
   Length,
   Max,
   Min,
-} from 'class-validator';
+} from "class-validator";
 import {
   AutomationExecutionStatus,
   AutomationTrigger,
-} from '../../../database/entities';
+} from "../../../database/entities";
 
 export class CreateRuleDto {
-  @ApiProperty({ example: 'Auto-assign new chats' })
+  @ApiProperty({ example: "Auto-assign new chats" })
   @IsString()
   @Length(1, 255)
   name: string;
@@ -33,8 +33,8 @@ export class CreateRuleDto {
   enabled?: boolean;
 
   @ApiPropertyOptional({
-    type: 'array',
-    items: { type: 'object', additionalProperties: true },
+    type: "array",
+    items: { type: "object", additionalProperties: true },
     description:
       'Discriminated by "type": channel | status | priority | emailDomain | messageContains | assignedTo | timeOfDay',
   })
@@ -43,8 +43,8 @@ export class CreateRuleDto {
   conditions?: unknown[];
 
   @ApiProperty({
-    type: 'array',
-    items: { type: 'object', additionalProperties: true },
+    type: "array",
+    items: { type: "object", additionalProperties: true },
     description:
       'Discriminated by "type": assign | setPriority | setStatus | aiSummary | aiReply | autoReply | addTag | removeTag',
   })
@@ -55,13 +55,13 @@ export class CreateRuleDto {
 export class UpdateRuleDto extends PartialType(CreateRuleDto) {}
 
 export class TestRuleDto {
-  @ApiProperty({ format: 'uuid', description: 'Conversation to test against' })
+  @ApiProperty({ format: "uuid", description: "Conversation to test against" })
   @IsUUID()
   conversationId: string;
 }
 
 export class RuleResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
   @ApiProperty()
@@ -73,10 +73,16 @@ export class RuleResponseDto {
   @ApiProperty({ enum: AutomationTrigger })
   trigger: AutomationTrigger;
 
-  @ApiProperty({ type: 'array', items: { type: 'object', additionalProperties: true } })
+  @ApiProperty({
+    type: "array",
+    items: { type: "object", additionalProperties: true },
+  })
   conditions: unknown[];
 
-  @ApiProperty({ type: 'array', items: { type: 'object', additionalProperties: true } })
+  @ApiProperty({
+    type: "array",
+    items: { type: "object", additionalProperties: true },
+  })
   actions: unknown[];
 
   @ApiPropertyOptional({ nullable: true })
@@ -90,10 +96,10 @@ export class RuleResponseDto {
 }
 
 export class TestRuleResultDto {
-  @ApiProperty({ description: 'Whether the conditions matched' })
+  @ApiProperty({ description: "Whether the conditions matched" })
   matched: boolean;
 
-  @ApiPropertyOptional({ format: 'uuid' })
+  @ApiPropertyOptional({ format: "uuid" })
   executionId?: string;
 
   @ApiPropertyOptional({ enum: AutomationExecutionStatus })
@@ -104,7 +110,7 @@ export class TestRuleResultDto {
 }
 
 export class QueryHistoryDto {
-  @ApiPropertyOptional({ format: 'uuid', description: 'Filter by rule' })
+  @ApiPropertyOptional({ format: "uuid", description: "Filter by rule" })
   @IsOptional()
   @IsUUID()
   ruleId?: string;
@@ -130,16 +136,16 @@ export class QueryHistoryDto {
 }
 
 export class ExecutionResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   ruleId: string;
 
   @ApiProperty()
   ruleName: string;
 
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   conversationId: string;
 
   @ApiProperty()

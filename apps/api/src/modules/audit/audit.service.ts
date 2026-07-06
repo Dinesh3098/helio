@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { RequestContextService } from '../../common/request-context/request-context.service';
-import { AuditLog } from '../../database/entities';
+import { Injectable, Logger } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { RequestContextService } from "../../common/request-context/request-context.service";
+import { AuditLog } from "../../database/entities";
 
 export interface AuditEntry {
   /** Defaults to the request's workspace; null for pre-workspace events. */
@@ -61,7 +61,7 @@ export class AuditService {
     this.auditRepository.save(row).catch((error: unknown) => {
       this.logger.error(
         `failed to write audit event ${entry.action}: ${
-          error instanceof Error ? error.message : 'unknown error'
+          error instanceof Error ? error.message : "unknown error"
         }`,
       );
     });
@@ -72,20 +72,20 @@ export class AuditService {
     query: AuditListQuery,
   ): Promise<{ data: AuditLog[]; total: number }> {
     const qb = this.auditRepository
-      .createQueryBuilder('a')
-      .leftJoinAndSelect('a.actorUser', 'actor')
-      .where('a.workspace_id = :workspaceId', { workspaceId })
-      .orderBy('a.created_at', 'DESC')
+      .createQueryBuilder("a")
+      .leftJoinAndSelect("a.actorUser", "actor")
+      .where("a.workspace_id = :workspaceId", { workspaceId })
+      .orderBy("a.created_at", "DESC")
       .offset((query.page - 1) * query.limit)
       .limit(query.limit);
 
     if (query.resourceType) {
-      qb.andWhere('a.resource_type = :resourceType', {
+      qb.andWhere("a.resource_type = :resourceType", {
         resourceType: query.resourceType,
       });
     }
     if (query.actorUserId) {
-      qb.andWhere('a.actor_user_id = :actorUserId', {
+      qb.andWhere("a.actor_user_id = :actorUserId", {
         actorUserId: query.actorUserId,
       });
     }
@@ -103,7 +103,7 @@ export class AuditService {
     return this.auditRepository.find({
       where: { workspaceId, resourceType, resourceId },
       relations: { actorUser: true },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
       take: 200,
     });
   }

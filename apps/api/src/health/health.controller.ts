@@ -1,26 +1,24 @@
-import {
-  Controller,
-  Get,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Controller, Get, ServiceUnavailableException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import {
   HealthCheckResult,
   HealthCheckService,
   TypeOrmHealthIndicator,
-} from '@nestjs/terminus';
-import * as os from 'node:os';
-import { appVersion } from '../config/app-version';
-import { AppConfig } from '../config/configuration';
-import { StorageService } from '../modules/storage/storage.service';
-import { ConnectionRegistryService } from '../realtime/connection-registry.service';
-import { RedisHealthIndicator } from './redis.health';
+} from "@nestjs/terminus";
+import * as os from "node:os";
+import { appVersion, buildInfo } from "../config/app-version";
+import { AppConfig } from "../config/configuration";
+import { StorageService } from "../modules/storage/storage.service";
+import { ConnectionRegistryService } from "../realtime/connection-registry.service";
+import { RedisHealthIndicator } from "./redis.health";
 
-type ComponentStatus = 'up' | 'down' | 'degraded' | 'disabled';
+type ComponentStatus = "up" | "down" | "degraded" | "disabled";
 
 interface HealthReport {
-  status: 'ok' | 'degraded' | 'down';
+  status: "ok" | "degraded" | "down";
   version: string;
+  commit: string;
+  buildDate: string;
   environment: string;
   uptimeSeconds: number;
   checks: {
@@ -45,7 +43,7 @@ interface HealthReport {
  * Docker HEALTHCHECK and load balancers key off the status code, so a
  * degraded-but-serving instance keeps receiving traffic.
  */
-@Controller('health')
+@Controller("health")
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
@@ -62,8 +60,8 @@ export class HealthController {
     let critical: HealthCheckResult;
     try {
       critical = await this.health.check([
-        () => this.db.pingCheck('database', { timeout: 5000 }),
-        () => this.redis.isHealthy('redis'),
+        () => this.db.pingCheck("database", { timeout: 5000 }),
+        () => this.redis.isHealthy("redis"),
       ]);
     } catch (error) {
       if (error instanceof ServiceUnavailableException) {
@@ -73,39 +71,42 @@ export class HealthController {
       }
     }
 
-    const databaseUp = critical.details?.database?.status === 'up';
-    const redisUp = critical.details?.redis?.status === 'up';
+    const databaseUp = critical.details?.database?.status === "up";
+    const redisUp = critical.details?.redis?.status === "up";
 
     const storageHealth = await this.storage.healthCheck();
-    const aiEnabled = !!this.config.get('gemini.apiKey', { infer: true });
-    const emailEnabled = !!this.config.get('resend.apiKey', { infer: true });
+    const aiEnabled = !!this.config.get("gemini.apiKey", { infer: true });
+    const emailEnabled = !!this.config.get("resend.apiKey", { infer: true });
 
     const memory = process.memoryUsage();
     const toMb = (bytes: number): number =>
       Math.round((bytes / 1024 / 1024) * 10) / 10;
 
+    const build = buildInfo();
     const report: HealthReport = {
-      status: 'ok',
+      status: "ok",
       version: appVersion(),
-      environment: this.config.get('nodeEnv', { infer: true }),
+      commit: build.commit,
+      buildDate: build.buildDate,
+      environment: this.config.get("nodeEnv", { infer: true }),
       uptimeSeconds: Math.round(process.uptime()),
       checks: {
-        database: { status: databaseUp ? 'up' : 'down' },
-        redis: { status: redisUp ? 'up' : 'down' },
+        database: { status: databaseUp ? "up" : "down" },
+        redis: { status: redisUp ? "up" : "down" },
         socket: {
           // The gateway shares the HTTP server: if this handler runs,
           // the Socket.IO server is accepting connections.
-          status: 'up',
+          status: "up",
           connectedSockets: this.connectionRegistry.socketCount(),
         },
-        ai: { provider: 'gemini', status: aiEnabled ? 'up' : 'disabled' },
+        ai: { provider: "gemini", status: aiEnabled ? "up" : "disabled" },
         email: {
-          provider: 'resend',
-          status: emailEnabled ? 'up' : 'disabled',
+          provider: "resend",
+          status: emailEnabled ? "up" : "disabled",
         },
         storage: {
           provider: this.storage.providerName,
-          status: storageHealth.available ? 'up' : 'degraded',
+          status: storageHealth.available ? "up" : "degraded",
           ...(storageHealth.reason ? { reason: storageHealth.reason } : {}),
         },
       },
@@ -120,11 +121,11 @@ export class HealthController {
     };
 
     if (!databaseUp || !redisUp) {
-      report.status = 'down';
+      report.status = "down";
       throw new ServiceUnavailableException(report);
     }
     if (!storageHealth.available || !aiEnabled || !emailEnabled) {
-      report.status = 'degraded';
+      report.status = "degraded";
     }
     return report;
   }

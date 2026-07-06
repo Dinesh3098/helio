@@ -35,7 +35,9 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
   z-index: 2147483000;
 }
 .helio-launcher:hover {
@@ -376,7 +378,6 @@
   }
 }
 
-
 /* ---------- Attachments ---------- */
 
 .helio-composer-wrap {
@@ -396,8 +397,14 @@
   align-items: center;
   justify-content: center;
 }
-.helio-attach:hover { color: var(--helio-text); background: var(--helio-bubble); }
-.helio-attach svg { width: 18px; height: 18px; }
+.helio-attach:hover {
+  color: var(--helio-text);
+  background: var(--helio-bubble);
+}
+.helio-attach svg {
+  width: 18px;
+  height: 18px;
+}
 
 .helio-upload-tray {
   display: flex;
@@ -418,7 +425,9 @@
   font-size: 12px;
   max-width: 100%;
 }
-.helio-upload-chip--error { border-color: #ef4444; }
+.helio-upload-chip--error {
+  border-color: #ef4444;
+}
 .helio-upload-progress {
   position: absolute;
   inset: 0 auto 0 0;
@@ -432,8 +441,12 @@
   text-overflow: ellipsis;
   max-width: 180px;
 }
-.helio-upload-name small { color: var(--helio-muted); }
-.helio-upload-chip--error .helio-upload-name small { color: #ef4444; }
+.helio-upload-name small {
+  color: var(--helio-muted);
+}
+.helio-upload-chip--error .helio-upload-name small {
+  color: #ef4444;
+}
 .helio-upload-action {
   position: relative;
   border: none;
@@ -444,7 +457,9 @@
   line-height: 1;
   padding: 2px;
 }
-.helio-upload-action:hover { color: var(--helio-text); }
+.helio-upload-action:hover {
+  color: var(--helio-text);
+}
 
 .helio-att-list {
   display: flex;
@@ -489,5 +504,10 @@
   border-color: rgba(255, 255, 255, 0.3);
   color: #fff;
 }
-.helio-att-file:disabled { cursor: default; opacity: 0.75; }
-.helio-att-file small { opacity: 0.7; }
+.helio-att-file:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+.helio-att-file small {
+  opacity: 0.7;
+}

@@ -1,8 +1,4 @@
-import type {
-  InfiniteData,
-  Query,
-  QueryClient,
-} from "@tanstack/react-query";
+import type { InfiniteData, Query, QueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 import type {
   Conversation,
@@ -155,8 +151,7 @@ export function applyMessageToConversationCaches(
       lastMessagePreview: preview,
       lastMessageAt: message.createdAt,
       updatedAt: message.createdAt,
-      status:
-        conversation.status === "SNOOZED" ? "OPEN" : conversation.status,
+      status: conversation.status === "SNOOZED" ? "OPEN" : conversation.status,
     };
   };
 

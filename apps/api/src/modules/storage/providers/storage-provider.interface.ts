@@ -1,4 +1,4 @@
-import type { Readable } from 'node:stream';
+import type { Readable } from "node:stream";
 
 /**
  * Object-storage abstraction. Providers move bytes for a key — nothing
@@ -6,7 +6,7 @@ import type { Readable } from 'node:stream';
  * StorageService/AttachmentsService. Same injection pattern as
  * AI_PROVIDER and EMAIL_PROVIDER: swapping vendors is one binding.
  */
-export const STORAGE_PROVIDER = Symbol('STORAGE_PROVIDER');
+export const STORAGE_PROVIDER = Symbol("STORAGE_PROVIDER");
 
 export interface PutObjectInput {
   key: string;
@@ -21,8 +21,8 @@ export interface PutObjectInput {
  * (S3 pre-signed) or a stream to proxy (local disk).
  */
 export type ObjectDownload =
-  | { kind: 'url'; url: string }
-  | { kind: 'stream'; stream: Readable };
+  | { kind: "url"; url: string }
+  | { kind: "stream"; stream: Readable };
 
 export interface StorageProvider {
   readonly name: string;

@@ -1,9 +1,9 @@
-import { Global, Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuditLog } from '../../database/entities';
-import { WorkspaceMembersModule } from '../workspace-members/workspace-members.module';
-import { AuditController } from './audit.controller';
-import { AuditService } from './audit.service';
+import { Global, Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { AuditLog } from "../../database/entities";
+import { WorkspaceMembersModule } from "../workspace-members/workspace-members.module";
+import { AuditController } from "./audit.controller";
+import { AuditService } from "./audit.service";
 
 /**
  * Global: nearly every business module records audit events; a global

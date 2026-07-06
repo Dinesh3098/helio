@@ -1,17 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { VisitorPrincipal } from './interfaces/visitor-principal.interface';
+import { Injectable } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { VisitorPrincipal } from "./interfaces/visitor-principal.interface";
 
 interface VisitorTokenPayload {
   sub: string;
-  typ: 'visitor';
+  typ: "visitor";
   wid: string;
   cid: string;
   name: string;
 }
 
 /** Sessions outlive page reloads via localStorage-driven re-issuance. */
-const VISITOR_TOKEN_TTL = '24h';
+const VISITOR_TOKEN_TTL = "24h";
 
 /**
  * Visitor tokens share the platform JWT secret but carry `typ: 'visitor'`
@@ -26,7 +26,7 @@ export class WidgetAuthService {
   async signVisitorToken(principal: VisitorPrincipal): Promise<string> {
     const payload: VisitorTokenPayload = {
       sub: principal.contactId,
-      typ: 'visitor',
+      typ: "visitor",
       wid: principal.workspaceId,
       cid: principal.conversationId,
       name: principal.name,
@@ -40,7 +40,7 @@ export class WidgetAuthService {
     try {
       const payload =
         await this.jwtService.verifyAsync<VisitorTokenPayload>(token);
-      if (payload.typ !== 'visitor') return null;
+      if (payload.typ !== "visitor") return null;
       return {
         contactId: payload.sub,
         workspaceId: payload.wid,

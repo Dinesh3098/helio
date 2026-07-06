@@ -3,11 +3,11 @@ import {
   ExecutionContext,
   Injectable,
   NestInterceptor,
-} from '@nestjs/common';
-import { Observable } from 'rxjs';
-import type { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
-import { WorkspaceMember } from '../../database/entities';
-import { RequestContextService } from './request-context.service';
+} from "@nestjs/common";
+import { Observable } from "rxjs";
+import type { AuthenticatedUser } from "../interfaces/authenticated-user.interface";
+import { WorkspaceMember } from "../../database/entities";
+import { RequestContextService } from "./request-context.service";
 
 /**
  * Runs after the guards (interceptors always do), so request.user and the

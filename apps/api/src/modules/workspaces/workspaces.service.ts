@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Workspace } from '../../database/entities';
-import { AuditService } from '../audit/audit.service';
-import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
-import { WorkspaceResponseDto } from './dto/workspace-response.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Workspace } from "../../database/entities";
+import { AuditService } from "../audit/audit.service";
+import { UpdateWorkspaceDto } from "./dto/update-workspace.dto";
+import { WorkspaceResponseDto } from "./dto/workspace-response.dto";
 
 @Injectable()
 export class WorkspacesService {
@@ -19,7 +19,7 @@ export class WorkspacesService {
       where: { id: workspaceId },
     });
     if (!workspace) {
-      throw new NotFoundException('Workspace not found');
+      throw new NotFoundException("Workspace not found");
     }
     return this.toResponse(workspace);
   }
@@ -32,16 +32,16 @@ export class WorkspacesService {
       where: { id: workspaceId },
     });
     if (!workspace) {
-      throw new NotFoundException('Workspace not found');
+      throw new NotFoundException("Workspace not found");
     }
     const previousName = workspace.name;
     workspace.name = dto.name;
     if (previousName !== dto.name) {
       this.auditService.record({
         workspaceId,
-        resourceType: 'workspace',
+        resourceType: "workspace",
         resourceId: workspaceId,
-        action: 'workspace.updated',
+        action: "workspace.updated",
         metadata: { from: previousName, to: dto.name },
       });
     }

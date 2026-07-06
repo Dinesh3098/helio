@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { ConnectionRegistryService } from './connection-registry.service';
-import { RealtimeEmitterService } from './realtime-emitter.service';
+import { Module } from "@nestjs/common";
+import { ConnectionRegistryService } from "./connection-registry.service";
+import { RealtimeEmitterService } from "./realtime-emitter.service";
 
 /**
  * Standalone on purpose: it imports nothing, so business modules,

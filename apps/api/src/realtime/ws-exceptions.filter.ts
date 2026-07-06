@@ -1,7 +1,7 @@
-import { ArgumentsHost, Catch, HttpException } from '@nestjs/common';
-import { BaseWsExceptionFilter, WsException } from '@nestjs/websockets';
-import type { Socket } from 'socket.io';
-import { SERVER_EVENTS } from './realtime.events';
+import { ArgumentsHost, Catch, HttpException } from "@nestjs/common";
+import { BaseWsExceptionFilter, WsException } from "@nestjs/websockets";
+import type { Socket } from "socket.io";
+import { SERVER_EVENTS } from "./realtime.events";
 
 /**
  * Uncaught handler/pipe errors become a messageError emit to the sender
@@ -13,10 +13,10 @@ export class WsExceptionsFilter extends BaseWsExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const client = host.switchToWs().getClient<Socket>();
 
-    let message = 'Something went wrong';
+    let message = "Something went wrong";
     if (exception instanceof WsException) {
       const error = exception.getError();
-      message = typeof error === 'string' ? error : exception.message;
+      message = typeof error === "string" ? error : exception.message;
     } else if (exception instanceof HttpException) {
       message = exception.message;
     }

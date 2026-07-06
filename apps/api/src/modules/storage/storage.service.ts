@@ -7,17 +7,17 @@ import {
   PayloadTooLargeException,
   ServiceUnavailableException,
   UnsupportedMediaTypeException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { randomUUID } from 'node:crypto';
-import type { Readable } from 'node:stream';
-import { AppConfig } from '../../config/configuration';
-import { StorageProviderError } from './errors/storage-provider.error';
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { randomUUID } from "node:crypto";
+import type { Readable } from "node:stream";
+import { AppConfig } from "../../config/configuration";
+import { StorageProviderError } from "./errors/storage-provider.error";
 import {
   ObjectDownload,
   STORAGE_PROVIDER,
   type StorageProvider,
-} from './providers/storage-provider.interface';
+} from "./providers/storage-provider.interface";
 
 /**
  * Allowlist, not blocklist: images + common documents only. Everything
@@ -25,23 +25,45 @@ import {
  * reaches a provider.
  */
 const ALLOWED_MIME_TYPES: Record<string, string> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/gif': 'gif',
-  'image/webp': 'webp',
-  'application/pdf': 'pdf',
-  'application/msword': 'doc',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-    'docx',
-  'text/plain': 'txt',
-  'text/csv': 'csv',
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/gif": "gif",
+  "image/webp": "webp",
+  "application/pdf": "pdf",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    "docx",
+  "text/plain": "txt",
+  "text/csv": "csv",
 };
 
 /** Extensions that must never pass, whatever mime type is claimed. */
 const FORBIDDEN_EXTENSIONS = new Set([
-  'exe', 'dll', 'bat', 'cmd', 'sh', 'bash', 'zsh', 'com', 'scr', 'msi',
-  'js', 'mjs', 'cjs', 'vbs', 'ps1', 'php', 'py', 'rb', 'pl', 'jar', 'app',
-  'dmg', 'html', 'htm', 'svg',
+  "exe",
+  "dll",
+  "bat",
+  "cmd",
+  "sh",
+  "bash",
+  "zsh",
+  "com",
+  "scr",
+  "msi",
+  "js",
+  "mjs",
+  "cjs",
+  "vbs",
+  "ps1",
+  "php",
+  "py",
+  "rb",
+  "pl",
+  "jar",
+  "app",
+  "dmg",
+  "html",
+  "htm",
+  "svg",
 ]);
 
 export interface StoreFileInput {
@@ -77,7 +99,7 @@ export class StorageService {
     config: ConfigService<AppConfig, true>,
   ) {
     this.maxFileSizeBytes =
-      config.get('storage.maxFileSizeMb', { infer: true }) * 1024 * 1024;
+      config.get("storage.maxFileSizeMb", { infer: true }) * 1024 * 1024;
   }
 
   get providerName(): string {
@@ -100,7 +122,7 @@ export class StorageService {
     } catch (error) {
       return {
         available: false,
-        reason: error instanceof Error ? error.message : 'unknown',
+        reason: error instanceof Error ? error.message : "unknown",
       };
     }
   }
@@ -112,18 +134,16 @@ export class StorageService {
       );
     }
     if (size <= 0) {
-      throw new BadRequestException('File is empty');
+      throw new BadRequestException("File is empty");
     }
     if (!ALLOWED_MIME_TYPES[mimeType]) {
       throw new UnsupportedMediaTypeException(
-        'Only PNG, JPEG, GIF, WEBP, PDF, DOC, DOCX, TXT, and CSV files are supported',
+        "Only PNG, JPEG, GIF, WEBP, PDF, DOC, DOCX, TXT, and CSV files are supported",
       );
     }
-    const extension = originalFilename.split('.').pop()?.toLowerCase() ?? '';
+    const extension = originalFilename.split(".").pop()?.toLowerCase() ?? "";
     if (FORBIDDEN_EXTENSIONS.has(extension)) {
-      throw new UnsupportedMediaTypeException(
-        'This file type is not allowed',
-      );
+      throw new UnsupportedMediaTypeException("This file type is not allowed");
     }
   }
 
@@ -181,32 +201,32 @@ export class StorageService {
   /** ASCII-safe, header-safe display name; extension kept for the OS. */
   sanitizeFilename(originalFilename: string, mimeType: string): string {
     const base = originalFilename
-      .replace(/\.[^.]*$/, '')
-      .normalize('NFKD')
-      .replace(/[^a-zA-Z0-9 _-]/g, '')
+      .replace(/\.[^.]*$/, "")
+      .normalize("NFKD")
+      .replace(/[^a-zA-Z0-9 _-]/g, "")
       .trim()
       .slice(0, 100);
-    return `${base || 'file'}.${ALLOWED_MIME_TYPES[mimeType] ?? 'bin'}`;
+    return `${base || "file"}.${ALLOWED_MIME_TYPES[mimeType] ?? "bin"}`;
   }
 
   private mapError(error: unknown): Error {
     if (error instanceof StorageProviderError) {
       switch (error.reason) {
-        case 'timeout':
+        case "timeout":
           return new GatewayTimeoutException(
-            'Storage service temporarily unavailable',
+            "Storage service temporarily unavailable",
           );
-        case 'not_found':
-          return new NotFoundException('File not found in storage');
-        case 'permission':
-        case 'unavailable':
+        case "not_found":
+          return new NotFoundException("File not found in storage");
+        case "permission":
+        case "unavailable":
           return new ServiceUnavailableException(
-            'Storage service temporarily unavailable',
+            "Storage service temporarily unavailable",
           );
       }
     }
     return new ServiceUnavailableException(
-      'Storage service temporarily unavailable',
+      "Storage service temporarily unavailable",
     );
   }
 }

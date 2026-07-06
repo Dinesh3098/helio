@@ -1,0 +1,78 @@
+name: Bug report
+description: Something in Helio doesn't work the way it should
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please search existing
+        issues first — duplicates slow everyone down.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I resolve a conversation from the inbox, the widget still shows it as open…
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps that trigger the behavior.
+      placeholder: |
+        1. Sign in and open the inbox
+        2. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      multiple: true
+      options:
+        - API (NestJS)
+        - Dashboard (Next.js)
+        - Chat widget
+        - Realtime / Socket.IO
+        - AI features
+        - Email
+        - Knowledge base
+        - Automation
+        - File uploads / storage
+        - Auth / workspaces
+        - Docker / deployment
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: How are you running Helio?
+      placeholder: |
+        - Deployment: docker compose / local pnpm dev
+        - OS: …
+        - Browser (if UI): …
+        - Version / commit (from GET /health): …
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: API logs, browser console output, or `docker compose logs api`. Redact secrets.
+      render: shell

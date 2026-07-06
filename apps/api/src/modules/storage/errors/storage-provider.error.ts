@@ -1,8 +1,8 @@
 export type StorageFailureReason =
-  | 'timeout'
-  | 'unavailable'
-  | 'not_found'
-  | 'permission';
+  | "timeout"
+  | "unavailable"
+  | "not_found"
+  | "permission";
 
 /**
  * The only failure type providers may throw — same pattern as
@@ -15,6 +15,6 @@ export class StorageProviderError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'StorageProviderError';
+    this.name = "StorageProviderError";
   }
 }

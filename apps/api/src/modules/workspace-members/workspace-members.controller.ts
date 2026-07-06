@@ -10,7 +10,7 @@ import {
   Patch,
   Post,
   UseGuards,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -18,27 +18,27 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
-} from '@nestjs/swagger';
-import { CurrentMembership } from '../../common/decorators/current-membership.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { WorkspaceMember, WorkspaceMemberRole } from '../../database/entities';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { InviteMemberDto } from './dto/invite-member.dto';
-import { MemberResponseDto } from './dto/member-response.dto';
-import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
-import { WorkspaceMembersService } from './workspace-members.service';
+} from "@nestjs/swagger";
+import { CurrentMembership } from "../../common/decorators/current-membership.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { WorkspaceMember, WorkspaceMemberRole } from "../../database/entities";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { InviteMemberDto } from "./dto/invite-member.dto";
+import { MemberResponseDto } from "./dto/member-response.dto";
+import { UpdateMemberRoleDto } from "./dto/update-member-role.dto";
+import { WorkspaceMembersService } from "./workspace-members.service";
 
-@ApiTags('workspace members')
+@ApiTags("workspace members")
 @ApiBearerAuth()
 @ApiHeader({
-  name: 'x-workspace-id',
+  name: "x-workspace-id",
   required: false,
   description:
-    'Workspace to operate on. Optional when the user belongs to exactly one workspace.',
+    "Workspace to operate on. Optional when the user belongs to exactly one workspace.",
 })
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('workspace/members')
+@Controller("workspace/members")
 export class WorkspaceMembersController {
   constructor(
     private readonly workspaceMembersService: WorkspaceMembersService,
@@ -50,7 +50,7 @@ export class WorkspaceMembersController {
     WorkspaceMemberRole.ADMIN,
     WorkspaceMemberRole.AGENT,
   )
-  @ApiOperation({ summary: 'List workspace members (oldest first)' })
+  @ApiOperation({ summary: "List workspace members (oldest first)" })
   @ApiOkResponse({ type: MemberResponseDto, isArray: true })
   listMembers(
     @CurrentMembership() membership: WorkspaceMember,
@@ -60,7 +60,7 @@ export class WorkspaceMembersController {
 
   @Post()
   @Roles(WorkspaceMemberRole.OWNER, WorkspaceMemberRole.ADMIN)
-  @ApiOperation({ summary: 'Invite an existing user into the workspace' })
+  @ApiOperation({ summary: "Invite an existing user into the workspace" })
   @ApiCreatedResponse({ type: MemberResponseDto })
   invite(
     @CurrentMembership() membership: WorkspaceMember,
@@ -69,25 +69,25 @@ export class WorkspaceMembersController {
     return this.workspaceMembersService.invite(membership, dto);
   }
 
-  @Patch(':memberId')
+  @Patch(":memberId")
   @Roles(WorkspaceMemberRole.OWNER, WorkspaceMemberRole.ADMIN)
   @ApiOperation({ summary: "Change a member's role" })
   @ApiOkResponse({ type: MemberResponseDto })
   updateRole(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Param("memberId", ParseUUIDPipe) memberId: string,
     @Body() dto: UpdateMemberRoleDto,
   ): Promise<MemberResponseDto> {
     return this.workspaceMembersService.updateRole(membership, memberId, dto);
   }
 
-  @Delete(':memberId')
+  @Delete(":memberId")
   @Roles(WorkspaceMemberRole.OWNER, WorkspaceMemberRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Remove a member from the workspace' })
+  @ApiOperation({ summary: "Remove a member from the workspace" })
   async removeMember(
     @CurrentMembership() membership: WorkspaceMember,
-    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Param("memberId", ParseUUIDPipe) memberId: string,
   ): Promise<void> {
     await this.workspaceMembersService.remove(membership, memberId);
   }

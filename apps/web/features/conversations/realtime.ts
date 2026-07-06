@@ -57,8 +57,7 @@ export function useRealtimeConnection(userId: string | undefined): void {
         queryKey: ["ai", message.conversationId],
       });
 
-      const { selectedConversationId, incrementUnread } =
-        useUiStore.getState();
+      const { selectedConversationId, incrementUnread } = useUiStore.getState();
       if (message.conversationId === selectedConversationId) {
         appendMessageToCache(queryClient, message);
       } else if (message.senderType === "CONTACT") {

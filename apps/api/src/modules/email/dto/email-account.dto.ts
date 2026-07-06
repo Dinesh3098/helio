@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import {
   IsBoolean,
   IsEmail,
@@ -7,28 +7,26 @@ import {
   IsString,
   Length,
   MaxLength,
-} from 'class-validator';
+} from "class-validator";
 
-export const ACCOUNT_STATUSES = ['ACTIVE', 'DISABLED'] as const;
+export const ACCOUNT_STATUSES = ["ACTIVE", "DISABLED"] as const;
 
 export class CreateEmailAccountDto {
-  @ApiProperty({ example: 'support@acme.com' })
+  @ApiProperty({ example: "support@acme.com" })
   @IsEmail()
   @MaxLength(255)
   email: string;
 
-  @ApiPropertyOptional({ example: 'Acme Support' })
+  @ApiPropertyOptional({ example: "Acme Support" })
   @IsOptional()
   @IsString()
   @Length(1, 255)
   displayName?: string;
 }
 
-export class UpdateEmailAccountDto extends PartialType(
-  CreateEmailAccountDto,
-) {
+export class UpdateEmailAccountDto extends PartialType(CreateEmailAccountDto) {
   @ApiPropertyOptional({
-    description: 'Mark the address verified (domain ownership confirmed)',
+    description: "Mark the address verified (domain ownership confirmed)",
   })
   @IsOptional()
   @IsBoolean()
@@ -41,7 +39,7 @@ export class UpdateEmailAccountDto extends PartialType(
 }
 
 export class EmailAccountResponseDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({ format: "uuid" })
   id: string;
 
   @ApiProperty()
@@ -50,7 +48,7 @@ export class EmailAccountResponseDto {
   @ApiPropertyOptional({ nullable: true })
   displayName: string | null;
 
-  @ApiProperty({ example: 'RESEND' })
+  @ApiProperty({ example: "RESEND" })
   provider: string;
 
   @ApiProperty()

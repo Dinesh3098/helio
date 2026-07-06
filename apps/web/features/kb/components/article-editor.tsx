@@ -22,11 +22,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorMessage } from "@/lib/api/client";
 import type { KbArticle } from "@/types/api";
-import {
-  useCreateArticle,
-  useKbCategories,
-  useUpdateArticle,
-} from "../hooks";
+import { useCreateArticle, useKbCategories, useUpdateArticle } from "../hooks";
 import { articleSchema, type ArticleValues } from "../schemas";
 
 const AUTOSAVE_DEBOUNCE_MS = 800;
@@ -121,10 +117,7 @@ export function ArticleEditor({ article }: { article: KbArticle | null }) {
       content: values.content,
     };
     if (article) {
-      update.mutate(
-        { id: article.id, ...payload },
-        { onSuccess: clearDraft },
-      );
+      update.mutate({ id: article.id, ...payload }, { onSuccess: clearDraft });
     } else {
       create.mutate(payload, {
         onSuccess: (created) => {

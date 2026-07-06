@@ -1,7 +1,7 @@
-import { SetMetadata } from '@nestjs/common';
-import { WorkspaceMemberRole } from '../../database/entities';
+import { SetMetadata } from "@nestjs/common";
+import { WorkspaceMemberRole } from "../../database/entities";
 
-export const ROLES_KEY = 'roles';
+export const ROLES_KEY = "roles";
 
 /**
  * Declares which workspace roles may hit a handler. Enforced by RolesGuard

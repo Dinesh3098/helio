@@ -1,0 +1,18 @@
+# Default owner for everything in the repository.
+# Later rules override earlier ones for more specific paths.
+
+* @Dinesh3098
+
+# Backend API — schema, auth, and provider integrations
+/apps/api/ @Dinesh3098
+/apps/api/src/database/migrations/ @Dinesh3098
+
+# Dashboard & embeddable widget
+/apps/web/ @Dinesh3098
+/packages/chat-widget/ @Dinesh3098
+
+# CI/CD, Docker, and release engineering
+/.github/ @Dinesh3098
+/docker-compose.yml @Dinesh3098
+/apps/api/Dockerfile @Dinesh3098
+/apps/web/Dockerfile @Dinesh3098

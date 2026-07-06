@@ -1,15 +1,15 @@
-import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppConfig } from '../../config/configuration';
-import { Contact, Conversation, Workspace } from '../../database/entities';
-import { AttachmentsModule } from '../attachments/attachments.module';
-import { MessagesModule } from '../messages/messages.module';
-import { WidgetAuthGuard } from './widget-auth.guard';
-import { WidgetAuthService } from './widget-auth.service';
-import { WidgetController } from './widget.controller';
-import { WidgetService } from './widget.service';
+import { Module } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { JwtModule } from "@nestjs/jwt";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { AppConfig } from "../../config/configuration";
+import { Contact, Conversation, Workspace } from "../../database/entities";
+import { AttachmentsModule } from "../attachments/attachments.module";
+import { MessagesModule } from "../messages/messages.module";
+import { WidgetAuthGuard } from "./widget-auth.guard";
+import { WidgetAuthService } from "./widget-auth.service";
+import { WidgetController } from "./widget.controller";
+import { WidgetService } from "./widget.service";
 
 @Module({
   imports: [
@@ -21,7 +21,7 @@ import { WidgetService } from './widget.service';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<AppConfig, true>) => ({
-        secret: config.get('jwt.secret', { infer: true }),
+        secret: config.get("jwt.secret", { infer: true }),
       }),
     }),
   ],

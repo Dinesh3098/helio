@@ -4,12 +4,12 @@ import {
   ForbiddenException,
   Injectable,
   UnauthorizedException,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { WorkspaceMember, WorkspaceMemberRole } from '../../database/entities';
-import { WorkspaceMembersService } from '../../modules/workspace-members/workspace-members.service';
-import { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
-import { ROLES_KEY } from '../decorators/roles.decorator';
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { WorkspaceMember, WorkspaceMemberRole } from "../../database/entities";
+import { WorkspaceMembersService } from "../../modules/workspace-members/workspace-members.service";
+import { AuthenticatedUser } from "../interfaces/authenticated-user.interface";
+import { ROLES_KEY } from "../decorators/roles.decorator";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -49,7 +49,7 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    const headerValue = request.headers['x-workspace-id'];
+    const headerValue = request.headers["x-workspace-id"];
     const workspaceId =
       request.params.workspaceId ??
       (Array.isArray(headerValue) ? headerValue[0] : headerValue);
@@ -57,7 +57,7 @@ export class RolesGuard implements CanActivate {
     let membership: WorkspaceMember | null;
     if (workspaceId) {
       if (!UUID_PATTERN.test(workspaceId)) {
-        throw new ForbiddenException('Workspace context is required');
+        throw new ForbiddenException("Workspace context is required");
       }
       membership = await this.workspaceMembersService.findMembership(
         workspaceId,
@@ -72,13 +72,13 @@ export class RolesGuard implements CanActivate {
       );
       if (memberships.length !== 1) {
         throw new ForbiddenException(
-          'Workspace context is required — send the x-workspace-id header',
+          "Workspace context is required — send the x-workspace-id header",
         );
       }
       membership = memberships[0] ?? null;
     }
     if (!membership || !requiredRoles.includes(membership.role)) {
-      throw new ForbiddenException('Insufficient workspace permissions');
+      throw new ForbiddenException("Insufficient workspace permissions");
     }
 
     request.workspaceMembership = membership;

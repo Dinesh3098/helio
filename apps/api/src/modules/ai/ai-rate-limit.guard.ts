@@ -4,9 +4,9 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-} from '@nestjs/common';
-import type { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
-import { RedisService } from '../../redis/redis.service';
+} from "@nestjs/common";
+import type { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
+import { RedisService } from "../../redis/redis.service";
 
 /** Per-user budget across ALL AI endpoints (they share one Gemini quota). */
 const MAX_REQUESTS = 30;

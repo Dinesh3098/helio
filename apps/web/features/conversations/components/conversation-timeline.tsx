@@ -66,7 +66,10 @@ export function ConversationTimeline({
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto" aria-label="Activity timeline">
+    <div
+      className="min-h-0 flex-1 overflow-y-auto"
+      aria-label="Activity timeline"
+    >
       <div className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
         {timeline.data.entries.map((entry) =>
           entry.kind === "message" && entry.message ? (

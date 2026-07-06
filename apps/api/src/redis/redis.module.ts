@@ -1,5 +1,5 @@
-import { Global, Module } from '@nestjs/common';
-import { RedisService } from './redis.service';
+import { Global, Module } from "@nestjs/common";
+import { RedisService } from "./redis.service";
 
 /**
  * Global so infrastructure concerns (health, future rate limiting,

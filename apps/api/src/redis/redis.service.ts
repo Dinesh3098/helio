@@ -1,7 +1,7 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
-import { AppConfig } from '../config/configuration';
+import { Injectable, Logger, OnModuleDestroy } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import Redis from "ioredis";
+import { AppConfig } from "../config/configuration";
 
 /**
  * Single shared Redis connection for the app (cache, presence, rate
@@ -13,12 +13,12 @@ export class RedisService implements OnModuleDestroy {
   private readonly client: Redis;
 
   constructor(config: ConfigService<AppConfig, true>) {
-    this.client = new Redis(config.get('redis.url', { infer: true }), {
+    this.client = new Redis(config.get("redis.url", { infer: true }), {
       maxRetriesPerRequest: 3,
     });
 
-    this.client.on('ready', () => this.logger.log('Redis connection ready'));
-    this.client.on('error', (error) =>
+    this.client.on("ready", () => this.logger.log("Redis connection ready"));
+    this.client.on("error", (error) =>
       this.logger.error(`Redis connection error: ${error.message}`),
     );
   }

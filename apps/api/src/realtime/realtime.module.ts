@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
-import { AuthModule } from '../modules/auth/auth.module';
-import { ConversationsModule } from '../modules/conversations/conversations.module';
-import { MessagesModule } from '../modules/messages/messages.module';
-import { WidgetModule } from '../modules/widget/widget.module';
-import { WorkspaceMembersModule } from '../modules/workspace-members/workspace-members.module';
-import { RealtimeEmitterModule } from './realtime-emitter.module';
-import { RealtimeGateway } from './realtime.gateway';
+import { Module } from "@nestjs/common";
+import { AuthModule } from "../modules/auth/auth.module";
+import { ConversationsModule } from "../modules/conversations/conversations.module";
+import { MessagesModule } from "../modules/messages/messages.module";
+import { WidgetModule } from "../modules/widget/widget.module";
+import { WorkspaceMembersModule } from "../modules/workspace-members/workspace-members.module";
+import { RealtimeEmitterModule } from "./realtime-emitter.module";
+import { RealtimeGateway } from "./realtime.gateway";
 
 @Module({
   imports: [
