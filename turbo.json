@@ -39,7 +39,14 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "cache": false,
+      "env": [
+        "TEST_DATABASE_URL",
+        "TEST_REDIS_URL",
+        "KEEP_TEST_CONTAINERS",
+        "CI"
+      ]
     },
     "dev": {
       "cache": false,

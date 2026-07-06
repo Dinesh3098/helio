@@ -43,11 +43,14 @@ import { RedisModule } from "./redis/redis.module";
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<AppConfig, true>) => {
-        const isDevelopment =
-          config.get("nodeEnv", { infer: true }) === "development";
+        const nodeEnv = config.get("nodeEnv", { infer: true });
+        const isDevelopment = nodeEnv === "development";
         return {
           pinoHttp: {
-            level: isDevelopment ? "debug" : "info",
+            // Silent under test: hundreds of request-completion lines
+            // would drown Jest output without telling us anything.
+            level:
+              nodeEnv === "test" ? "silent" : isDevelopment ? "debug" : "info",
             transport: isDevelopment
               ? { target: "pino-pretty", options: { singleLine: true } }
               : undefined,
