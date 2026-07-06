@@ -4,7 +4,7 @@
 # node:22-slim (glibc) rather than alpine: bcrypt ships prebuilt glibc
 # binaries, so no compiler toolchain is needed in any stage.
 
-FROM node:22-slim AS base
+FROM node:26-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable pnpm
@@ -38,7 +38,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm --filter @helio/api deploy --prod /out
 
 # -------------------------------------------------------------- runtime
-FROM node:22-slim AS runtime
+FROM node:26-slim AS runtime
 ENV NODE_ENV=production
 
 # Release metadata (surfaced by /health and the startup summary).
