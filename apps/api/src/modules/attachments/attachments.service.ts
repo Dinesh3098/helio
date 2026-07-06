@@ -66,9 +66,24 @@ export class AttachmentsService {
     }
 
     try {
+      // Validate BEFORE the read stream exists: a rejected file (413/415)
+      // must never leave an orphaned stream whose async open() races the
+      // finally-unlink below — losing that race emitted an unhandled
+      // ENOENT 'error' and crashed the process (seen on Linux CI, where
+      // unlink consistently beats open; macOS opens fast enough to hide it).
+      this.storageService.validate(
+        input.originalFilename,
+        input.mimeType,
+        input.size,
+      );
+      const body = createReadStream(input.tempPath);
+      // If the provider fails before consuming the stream, its open() can
+      // still lose to the unlink — that must degrade, not crash.
+      body.on("error", () => undefined);
+
       const stored = await this.storageService.store({
         workspaceId: input.workspaceId,
-        body: createReadStream(input.tempPath),
+        body,
         originalFilename: input.originalFilename,
         mimeType: input.mimeType,
         size: input.size,
