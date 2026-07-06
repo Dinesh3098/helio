@@ -40,6 +40,14 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 # -------------------------------------------------------------- runtime
 FROM node:22-slim AS runtime
 ENV NODE_ENV=production
+
+# Release metadata (surfaced by /health and the startup summary).
+# CI/release pipelines pass the real values; local builds get "unknown".
+ARG GIT_SHA=""
+ARG BUILD_DATE=""
+ENV GIT_SHA=$GIT_SHA \
+    BUILD_DATE=$BUILD_DATE
+
 WORKDIR /app
 
 COPY --from=build --chown=node:node /out ./

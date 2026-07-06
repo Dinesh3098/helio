@@ -10,6 +10,7 @@ node_modules
 .env.*
 !.env.example
 !.env.production.example
+!.env.ci.example
 
 # Testing
 coverage
@@ -44,8 +45,7 @@ next-env.d.ts
 # Local tooling
 .claude/
 
-# Docs (committed at the end of the project)
-docs/
+# Internal working notes (project docs live in docs/ and are committed)
 PROJECT_CONTEXT.md
 
 # IDE

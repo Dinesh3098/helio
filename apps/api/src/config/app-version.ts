@@ -22,3 +22,22 @@ export function appVersion(): string {
   }
   return cached;
 }
+
+export interface BuildInfo {
+  version: string;
+  commit: string;
+  buildDate: string;
+}
+
+/**
+ * Release metadata stamped into the image at Docker build time (GIT_SHA
+ * and BUILD_DATE build args → env). Local/dev runs report "unknown" —
+ * intentionally not required configuration.
+ */
+export function buildInfo(): BuildInfo {
+  return {
+    version: appVersion(),
+    commit: process.env.GIT_SHA || "unknown",
+    buildDate: process.env.BUILD_DATE || "unknown",
+  };
+}

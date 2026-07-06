@@ -6,7 +6,7 @@ import {
   TypeOrmHealthIndicator,
 } from "@nestjs/terminus";
 import * as os from "node:os";
-import { appVersion } from "../config/app-version";
+import { appVersion, buildInfo } from "../config/app-version";
 import { AppConfig } from "../config/configuration";
 import { StorageService } from "../modules/storage/storage.service";
 import { ConnectionRegistryService } from "../realtime/connection-registry.service";
@@ -17,6 +17,8 @@ type ComponentStatus = "up" | "down" | "degraded" | "disabled";
 interface HealthReport {
   status: "ok" | "degraded" | "down";
   version: string;
+  commit: string;
+  buildDate: string;
   environment: string;
   uptimeSeconds: number;
   checks: {
@@ -80,9 +82,12 @@ export class HealthController {
     const toMb = (bytes: number): number =>
       Math.round((bytes / 1024 / 1024) * 10) / 10;
 
+    const build = buildInfo();
     const report: HealthReport = {
       status: "ok",
       version: appVersion(),
+      commit: build.commit,
+      buildDate: build.buildDate,
       environment: this.config.get("nodeEnv", { infer: true }),
       uptimeSeconds: Math.round(process.uptime()),
       checks: {

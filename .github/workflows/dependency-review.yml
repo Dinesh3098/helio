@@ -1,0 +1,27 @@
+# Blocks pull requests that introduce dependencies with known
+# high/critical vulnerabilities or disallowed licenses.
+# Requires the GitHub dependency graph (enabled by default on public
+# repos; Settings → Security → Dependency graph on private ones).
+
+name: Dependency Review
+
+on:
+  pull_request:
+    branches: [main, master, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: Review dependency changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure

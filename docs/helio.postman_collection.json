@@ -1,0 +1,800 @@
+{
+  "info": {
+    "name": "Helio API",
+    "description": "Helio — AI-powered customer communication platform.\n\nAuth model: short-lived JWT access token (Bearer) + rotating refresh token (JSON body).\n\nSignup/Login/Refresh automatically store `accessToken` and `refreshToken` as collection variables, so requests can be run top-to-bottom without copy-pasting.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "workspaceId",
+      "value": ""
+    },
+    {
+      "key": "memberId",
+      "value": ""
+    },
+    {
+      "key": "contactId",
+      "value": ""
+    },
+    {
+      "key": "conversationId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health — API + Postgres + Redis status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/signup — create account + workspace",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                  "}",
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/signup",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane@acme.com\",\n  \"password\": \"supersecret123\",\n  \"workspaceName\": \"Acme Inc\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/login — start a session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                  "}",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane@acme.com\",\n  \"password\": \"supersecret123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /auth/me — current user (Bearer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        },
+        {
+          "name": "POST /auth/refresh — rotate tokens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                  "}",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/logout — revoke session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));",
+                  "pm.collectionVariables.set('accessToken', '');",
+                  "pm.collectionVariables.set('refreshToken', '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/logout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workspace",
+      "description": "All requests require a Bearer access token (run Signup or Login first). The x-workspace-id header is optional while the user belongs to exactly one workspace; with several, enable it. GET /workspace stores workspaceId automatically.",
+      "item": [
+        {
+          "name": "Signup invitee (helper — run once)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 or 409 (already exists)', () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/signup",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invited Agent\",\n  \"email\": \"agent@acme.com\",\n  \"password\": \"supersecret123\",\n  \"workspaceName\": \"Agent Personal\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /workspace — current workspace",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  pm.collectionVariables.set('workspaceId', pm.response.json().id);",
+                  "}",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/workspace"
+          }
+        },
+        {
+          "name": "PATCH /workspace — rename (OWNER only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/workspace",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Support\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /workspace/members — list members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/workspace/members"
+          }
+        },
+        {
+          "name": "POST /workspace/members — invite existing user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('memberId', pm.response.json().id);",
+                  "}",
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/workspace/members",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"agent@acme.com\",\n  \"role\": \"AGENT\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH /workspace/members/:memberId — change role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/workspace/members/{{memberId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"ADMIN\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /workspace/members/:memberId — remove member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/workspace/members/{{memberId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "description": "Contacts are created by the chat widget / email ingestion (no POST endpoint). GET /contacts stores the first result's id as contactId.",
+      "item": [
+        {
+          "name": "GET /contacts — list (search, paginated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.data.length > 0) pm.collectionVariables.set('contactId', body.data[0].id);",
+                  "}",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contacts?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "alice",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /contacts/:id — profile + conversation stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/contacts/{{contactId}}"
+          }
+        },
+        {
+          "name": "PATCH /contacts/:id — update profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/contacts/{{contactId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"email\": \"updated@customer.com\",\n  \"phone\": \"+91 98765 43210\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /contacts/:id/conversations — by latest activity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/contacts/{{contactId}}/conversations"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Conversations",
+      "description": "Conversations are created by the chat widget / email ingestion (no POST endpoint). GET /conversations stores the first result's id as conversationId.",
+      "item": [
+        {
+          "name": "GET /conversations — list (filters, paginated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.data.length > 0) pm.collectionVariables.set('conversationId', body.data[0].id);",
+                  "}",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "OPEN",
+                  "disabled": true
+                },
+                {
+                  "key": "channel",
+                  "value": "CHAT",
+                  "disabled": true
+                },
+                {
+                  "key": "assignedToUserId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "contactId",
+                  "value": "{{contactId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "alice",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "lastMessageAt",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "DESC",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /conversations/:id — detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}"
+          }
+        },
+        {
+          "name": "PATCH /conversations/:id — set status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SNOOZED\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /conversations/:id/assign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/assign",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workspaceMemberId\": \"{{memberId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /conversations/:id/resolve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/resolve"
+          }
+        },
+        {
+          "name": "POST /conversations/:id/snooze",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/snooze"
+          }
+        },
+        {
+          "name": "POST /conversations/:id/reopen",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/reopen"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "GET /conversations/:id/messages — oldest→newest, cursor-paginated",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/{{conversationId}}/messages?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations", "{{conversationId}}", "messages"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true,
+                  "description": "nextCursor from a previous response; returns older messages"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /conversations/:id/messages — send agent message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-workspace-id",
+                "value": "{{workspaceId}}",
+                "disabled": true
+              }
+            ],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

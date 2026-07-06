@@ -3,7 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Logger } from "nestjs-pino";
 import { DataSource } from "typeorm";
 import { RedisService } from "../redis/redis.service";
-import { appVersion } from "./app-version";
+import { appVersion, buildInfo } from "./app-version";
 import { AppConfig } from "./configuration";
 
 /**
@@ -48,7 +48,9 @@ export async function logStartupSummary(
   const storage = config.get("storage", { infer: true });
   const s3Configured = !!(storage.aws.region && storage.aws.bucket);
 
+  const build = buildInfo();
   logger.log(`Helio API v${appVersion()} — environment: ${environment}`);
+  logger.log(`Build: commit ${build.commit}, built ${build.buildDate}`);
   logger.log(`API listening at ${apiUrl}`);
   logger.log(`Dashboard URL: ${dashboardUrl || "not configured"}`);
   logger.log(`Database: connected (migration: ${migrationVersion})`);

@@ -1,0 +1,156 @@
+# Helio CI — verifies every push and pull request.
+#
+# Two jobs:
+#   verify — install (frozen lockfile), hygiene checks, format, lint,
+#            types, build, security audit, build artifacts
+#   docker — full docker compose build + boot with mock env, health probe
+#
+# Runs locally too: see docs/ci-cd.md ("Running CI locally").
+
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, types & build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Reads the pinned pnpm version from package.json "packageManager"
+      # (corepack-style pinning — no version drift between CI and local).
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm # caches the pnpm store keyed on pnpm-lock.yaml
+
+      # --frozen-lockfile doubles as the lockfile-consistency gate:
+      # install fails if pnpm-lock.yaml doesn't match the manifests.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check no generated files are committed
+        run: |
+          bad=$(git ls-files | grep -E '(^|/)(dist|\.next|\.turbo)/|^apps/web/public/widget(-app)?\.js$|\.tsbuildinfo$' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Generated files are committed to the repository:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type-check
+        run: pnpm check-types
+
+      # Explicit bash shell → pipefail, so a build failure is not masked
+      # by tee's exit code.
+      - name: Build all packages
+        shell: bash
+        run: pnpm build 2>&1 | tee build.log
+
+      # Fails only on high/critical advisories; low/moderate are reported
+      # but do not block the build.
+      - name: Security audit
+        run: pnpm audit --audit-level high
+
+      - name: Collect build artifacts
+        if: always()
+        run: |
+          mkdir -p ci-artifacts/coverage
+          echo "Coverage reports will be published here once test suites land (turbo task 'test' is already wired)." > ci-artifacts/coverage/README.md
+          node -e '
+            const { execSync } = require("node:child_process");
+            const api = require("./apps/api/package.json");
+            const meta = {
+              version: api.version,
+              gitSha: process.env.GITHUB_SHA ?? "unknown",
+              gitRef: process.env.GITHUB_REF ?? "unknown",
+              buildTimestamp: new Date().toISOString(),
+              node: process.version,
+              pnpm: execSync("pnpm --version").toString().trim(),
+              runner: process.env.RUNNER_OS ?? "unknown",
+              runId: process.env.GITHUB_RUN_ID ?? "unknown",
+            };
+            require("node:fs").writeFileSync("ci-artifacts/build-metadata.json", JSON.stringify(meta, null, 2));
+            console.log(JSON.stringify(meta, null, 2));
+          '
+          cp build.log ci-artifacts/build.log 2>/dev/null || echo "no build log" > ci-artifacts/build.log
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ github.sha }}
+          path: ci-artifacts/
+          retention-days: 14
+
+  docker:
+    name: Docker build & boot
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare CI environment (mock values only)
+        run: cp .env.ci.example .env
+
+      - name: Build images
+        env:
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          export BUILD_DATE
+          docker compose build
+
+      - name: Boot the full stack
+        run: docker compose up -d --wait --wait-timeout 240
+
+      - name: Verify API health
+        run: |
+          curl -fsS http://localhost:4000/health | tee health.json
+          node -e '
+            const h = require("./health.json");
+            const ok = ["ok", "degraded"].includes(h.status)
+              && h.checks.database.status === "up"
+              && h.checks.redis.status === "up";
+            if (!ok) { console.error("unhealthy:", JSON.stringify(h)); process.exit(1); }
+            console.log("API healthy:", h.status, "| version:", h.version, "| commit:", h.commit);
+          '
+
+      - name: Verify dashboard & widget bundles
+        run: |
+          curl -fsS -o /dev/null http://localhost:3000/login
+          curl -fsS -o /dev/null http://localhost:3000/widget.js
+          curl -fsS -o /dev/null http://localhost:3000/widget-app.js
+          echo "dashboard + widget bundles served"
+
+      - name: Verify Socket.IO handshake
+        run: curl -fsS "http://localhost:4000/socket.io/?EIO=4&transport=polling" | head -c 100
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --tail 100
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
