@@ -1,0 +1,11 @@
+# Cloudflare Email Worker: receives inbound mail for the domain via
+# Email Routing and forwards it as JSON to the Helio API's email webhook.
+name = "helio-email-worker"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+[vars]
+# Public origin of the Helio API — no trailing slash.
+# Local dev: a `cloudflared tunnel --url http://localhost:4000` URL.
+# Production: the deployed API origin (e.g. https://api.dineshbhadane.com).
+WEBHOOK_URL = "https://size-ship-loud-molecules.trycloudflare.com"
